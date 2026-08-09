@@ -62,6 +62,12 @@ export const AdminPortalModal = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  // Reset search and status filters when changing admin dashboard tabs
+  useEffect(() => {
+    setStatusFilter('All');
+    setSearchQuery('');
+  }, [activeTab]);
+
   // Real-time Event Listeners & Supabase Subscriptions for auto-updating Admin Dashboard without page refresh
   useEffect(() => {
     // 1. Listen to local custom window events (instant update in same session)
@@ -378,17 +384,29 @@ export const AdminPortalModal = ({ isOpen, onClose }) => {
 
   // Filtered queries for search
   const filteredConsultations = consultations.filter(item => {
-    const matchesSearch = (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.organization || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q || 
+                          (item.name || '').toLowerCase().includes(q) ||
+                          (item.organization || '').toLowerCase().includes(q) ||
+                          (item.email || '').toLowerCase().includes(q) ||
+                          (item.phone || '').toLowerCase().includes(q) ||
+                          (item.mainNeed || '').toLowerCase().includes(q) ||
+                          (item.type || '').toLowerCase().includes(q) ||
+                          (item.id || '').toLowerCase().includes(q);
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const filteredRequirements = requirements.filter(item => {
-    const matchesSearch = (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.organization || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.toLowerCase();
+    const matchesSearch = !q || 
+                          (item.name || '').toLowerCase().includes(q) ||
+                          (item.organization || '').toLowerCase().includes(q) ||
+                          (item.email || '').toLowerCase().includes(q) ||
+                          (item.phone || '').toLowerCase().includes(q) ||
+                          (item.category || '').toLowerCase().includes(q) ||
+                          (item.scope || '').toLowerCase().includes(q) ||
+                          (item.id || '').toLowerCase().includes(q);
     const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
     return matchesSearch && matchesStatus;
   });

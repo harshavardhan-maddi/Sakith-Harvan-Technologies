@@ -33,6 +33,7 @@ export const RequirementFormModal = ({ isOpen, onClose, initialProduct = '', onS
   if (!isOpen) return null;
 
   const requirementOptions = [
+    'Enterprise SaaS Solution',
     'Website',
     'Web Application',
     'Mobile Application',
