@@ -80,6 +80,9 @@ export const ConsultationBooking = ({ onBookingComplete }) => {
     // Sync to Supabase cloud database
     saveConsultationToSupabase(bookingObject);
 
+    // Dispatch real-time event for instant live update in Admin Portal without page refresh
+    window.dispatchEvent(new CustomEvent('sh_consultations_updated', { detail: bookingObject }));
+
     setBookingDetails(bookingObject);
     if (onBookingComplete) {
       onBookingComplete(bookingObject);

@@ -9,6 +9,7 @@ import { INITIAL_WORKSHOPS } from '../data/defaultData';
 import { Logo } from './Logo';
 import { QuotationMaker } from './QuotationMaker';
 import { 
+  supabase,
   fetchConsultationsFromSupabase, 
   fetchRequirementsFromSupabase, 
   fetchWorkshopsFromSupabase,
@@ -60,6 +61,72 @@ export const AdminPortalModal = ({ isOpen, onClose }) => {
       loadStorageData();
     }
   }, [isOpen]);
+
+  // Real-time Event Listeners & Supabase Subscriptions for auto-updating Admin Dashboard without page refresh
+  useEffect(() => {
+    // 1. Listen to local custom window events (instant update in same session)
+    const handleReqUpdate = (e) => {
+      const newLead = e.detail;
+      if (newLead) {
+        setRequirements((prev) => {
+          if (prev.some(item => item.id === newLead.id)) return prev;
+          return [newLead, ...prev];
+        });
+      } else {
+        loadStorageData();
+      }
+    };
+
+    const handleConsultUpdate = (e) => {
+      const newBooking = e.detail;
+      if (newBooking) {
+        setConsultations((prev) => {
+          if (prev.some(item => item.id === newBooking.id)) return prev;
+          return [newBooking, ...prev];
+        });
+      } else {
+        loadStorageData();
+      }
+    };
+
+    window.addEventListener('sh_requirements_updated', handleReqUpdate);
+    window.addEventListener('sh_consultations_updated', handleConsultUpdate);
+
+    // 2. Listen to Supabase Realtime channel for live cross-device / cross-tab updates
+    const channel = supabase
+      .channel('public_admin_leads')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'requirements' },
+        (payload) => {
+          if (payload.new) {
+            setRequirements((prev) => {
+              if (prev.some(item => item.id === payload.new.id)) return prev;
+              return [payload.new, ...prev];
+            });
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'consultations' },
+        (payload) => {
+          if (payload.new) {
+            setConsultations((prev) => {
+              if (prev.some(item => item.id === payload.new.id)) return prev;
+              return [payload.new, ...prev];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('sh_requirements_updated', handleReqUpdate);
+      window.removeEventListener('sh_consultations_updated', handleConsultUpdate);
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const loadStorageData = () => {
     const rawConsultations = localStorage.getItem('sh_consultations');

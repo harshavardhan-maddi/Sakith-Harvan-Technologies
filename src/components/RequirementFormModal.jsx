@@ -112,6 +112,9 @@ export const RequirementFormModal = ({ isOpen, onClose, initialProduct = '', onS
     // Sync to Supabase cloud database
     saveRequirementToSupabase(newLead);
 
+    // Dispatch real-time event for instant live update in Admin Portal without page refresh
+    window.dispatchEvent(new CustomEvent('sh_requirements_updated', { detail: newLead }));
+
     if (onSubmitSuccess) {
       onSubmitSuccess(newLead);
     }
