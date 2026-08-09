@@ -24,11 +24,11 @@ export const Navbar = ({
 
   const navItems = [
     { id: 'home', label: 'Home' },
-    { id: 'saas', label: '🚀 SaaS Space (Primary)' },
+    { id: 'saas-space', label: '🚀 SaaS Space (Space 1)' },
+    { id: 'workshop-space', label: '🎓 Workshops Space (Space 2)' },
+    { id: 'founders-space', label: '👥 Meet Founders (Space 3)' },
     { id: 'services', label: 'Services' },
-    { id: 'workshops', label: '🎓 Workshops Space' },
     { id: 'solutions', label: 'Solutions' },
-    { id: 'about', label: 'About' },
     { id: 'contact', label: 'Contact' }
   ];
 
