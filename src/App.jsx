@@ -154,6 +154,45 @@ export default function App() {
         </section>
 
         {/* =================================================================== */}
+        {/* PRIMARY SPACE 3: COMPANY LEADERSHIP & FOUNDERS SPACE (MIDDLE SITE)  */}
+        {/* =================================================================== */}
+        <section id="founders-space" className="py-20 bg-slate-950 relative space-y-12 border-t border-b border-white/10 my-6">
+          {/* Visual Divider Card for Primary Space 3 */}
+          <div className="container-custom">
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-cyan-500/40 bg-gradient-to-r from-slate-900 via-cyan-950/60 to-slate-900 glow-blue flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="space-y-2 text-center md:text-left">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500 text-slate-950 text-xs font-extrabold tracking-wide shadow-lg shadow-cyan-500/30">
+                  <Users className="w-4 h-4" />
+                  <span>CENTER STAGE — PRIMARY SPACE 3</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
+                  Meet the Founders &amp; Engineering Leadership
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+                  Founded and driven by Maddi Harshavardhan and Thoka Sai Krishna — leading Sakith Harvan Technologies to architect enterprise SaaS platforms, AI solutions, and institutional tech bootcamps.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+                <button
+                  onClick={() => setIsConsultationModalOpen(true)}
+                  className="btn-primary text-xs py-3.5 px-6 glow-blue font-bold"
+                >
+                  <Calendar className="w-4 h-4" />
+                  <span>Talk to Founders</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Company Overview & Leadership Team */}
+          <FoundersSection
+            onOpenConsultation={() => setIsConsultationModalOpen(true)}
+            onOpenRequirement={handleOpenRequirement}
+          />
+        </section>
+
+        {/* =================================================================== */}
         {/* SPACE 2: INSTITUTIONAL TECHNOLOGY WORKSHOPS & BOOTCAMPS SPACE      */}
         {/* =================================================================== */}
         <section id="workshop-space" className="py-16 bg-slate-950/90 relative space-y-12 border-t border-white/10">
@@ -189,45 +228,6 @@ export default function App() {
           <WorkshopsSection
             onOpenRequirement={handleOpenRequirement}
             onBookWorkshop={handleBookWorkshop}
-          />
-        </section>
-
-        {/* =================================================================== */}
-        {/* PRIMARY SPACE 3: COMPANY LEADERSHIP & FOUNDERS SPACE                */}
-        {/* =================================================================== */}
-        <section id="founders-space" className="py-16 bg-slate-950 relative space-y-12 border-t border-white/10">
-          {/* Visual Divider Card for Primary Space 3 */}
-          <div className="container-custom">
-            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-cyan-500/40 bg-gradient-to-r from-slate-900 via-cyan-950/60 to-slate-900 glow-blue flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="space-y-2 text-center md:text-left">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500 text-slate-950 text-xs font-extrabold tracking-wide shadow-lg shadow-cyan-500/30">
-                  <Users className="w-4 h-4" />
-                  <span>LEADERSHIP &amp; FOUNDERS — SPACE 3</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-                  Meet the Founders &amp; Engineering Leadership
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-                  Founded and driven by Maddi Harshavardhan and Thoka Sai Krishna — leading Sakith Harvan Technologies to architect enterprise SaaS platforms, AI solutions, and institutional tech bootcamps.
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
-                <button
-                  onClick={() => setIsConsultationModalOpen(true)}
-                  className="btn-primary text-xs py-3.5 px-6 glow-blue font-bold"
-                >
-                  <Calendar className="w-4 h-4" />
-                  <span>Talk to Founders</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Company Overview & Leadership Team */}
-          <FoundersSection
-            onOpenConsultation={() => setIsConsultationModalOpen(true)}
-            onOpenRequirement={handleOpenRequirement}
           />
         </section>
 
