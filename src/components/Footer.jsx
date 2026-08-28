@@ -8,6 +8,7 @@ export const Footer = ({
   onOpenConsultation, 
   onOpenRequirement, 
   onOpenAdmin,
+  onOpenFounderLogin,
   onOpenEmpLogin,
   onOpenInternLogin
 }) => {
@@ -94,7 +95,7 @@ export const Footer = ({
               </li>
               <li>
                 <button onClick={() => handleNav('services')} className="text-slate-300 hover:text-cyan-400 transition-colors">
-                  Services & Digital Solutions
+                  Services &amp; Digital Solutions
                 </button>
               </li>
               <li>
@@ -104,12 +105,12 @@ export const Footer = ({
               </li>
               <li>
                 <button onClick={() => handleNav('workshops')} className="text-slate-300 hover:text-cyan-400 transition-colors">
-                  Technology Workshops & Bootcamps
+                  Technology Workshops &amp; Bootcamps
                 </button>
               </li>
               <li>
                 <button onClick={() => handleNav('solutions')} className="text-slate-300 hover:text-cyan-400 transition-colors">
-                  Custom Solutions & Tech Stack
+                  Custom Solutions &amp; Tech Stack
                 </button>
               </li>
             </ul>
@@ -133,16 +134,20 @@ export const Footer = ({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap justify-center">
-            <button onClick={onOpenAdmin} className="hover:text-rose-400 font-semibold flex items-center gap-1 transition-colors">
-              <span>Admin Portal</span>
+            <button onClick={onOpenFounderLogin} className="hover:text-rose-400 font-bold text-rose-300 flex items-center gap-1 transition-colors">
+              <span>Founder &amp; CEO Portal</span>
             </button>
             <span>•</span>
             <button onClick={onOpenEmpLogin} className="hover:text-cyan-400 font-semibold transition-colors">
-              Employee Portal (Emp Login)
+              Employee Portal
             </button>
             <span>•</span>
             <button onClick={onOpenInternLogin} className="hover:text-amber-400 font-semibold transition-colors">
-              Intern Portal (Intern Login)
+              Intern Portal
+            </button>
+            <span>•</span>
+            <button onClick={onOpenAdmin} className="hover:text-rose-400 font-semibold flex items-center gap-1 transition-colors">
+              <span>Admin Leads</span>
             </button>
             <span>•</span>
             <button onClick={() => onOpenRequirement({})} className="hover:text-cyan-400 transition-colors">
@@ -162,4 +167,5 @@ export const Footer = ({
     </footer>
   );
 };
+
 

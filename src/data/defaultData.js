@@ -552,6 +552,28 @@ export const INITIAL_REGISTRATIONS = [
 
 export const INITIAL_TEAM_MEMBERS = [
   {
+    id: "CEO-01",
+    name: "Maddi Harshavardhan",
+    role: "Co-Founder & CEO / Technical Lead",
+    type: "Founder & CEO",
+    email: "mharshavardhan048@gmail.com",
+    phone: "+91 7981847745",
+    joinedDate: "2026-07-01",
+    status: "Active",
+    isExecutive: true
+  },
+  {
+    id: "FOUNDER-02",
+    name: "Thoka Sai Krishna",
+    role: "Co-Founder & Solutions Architect",
+    type: "Founder & Executive",
+    email: "saikrishnathoka2526@gmail.com",
+    phone: "+91 9014340739",
+    joinedDate: "2026-07-01",
+    status: "Active",
+    isExecutive: true
+  },
+  {
     id: "EMP-101",
     name: "K. Ramesh Kumar",
     role: "Senior Full Stack Engineer",

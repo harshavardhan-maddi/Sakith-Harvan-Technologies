@@ -37,6 +37,11 @@ export default function App() {
     setIsStaffPortalOpen(true);
   };
 
+  const handleOpenFounderLogin = () => {
+    setStaffPortalRole('founder');
+    setIsStaffPortalOpen(true);
+  };
+
   // Website Color Theme Toggle State (Red Present <-> Blue Cyber)
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('sh_theme') || 'red';
@@ -94,6 +99,7 @@ export default function App() {
         onOpenConsultation={() => setIsConsultationModalOpen(true)}
         onOpenRequirement={() => handleOpenRequirement({})}
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
+        onOpenFounderLogin={handleOpenFounderLogin}
         onOpenEmpLogin={handleOpenEmpLogin}
         onOpenInternLogin={handleOpenInternLogin}
         theme={theme}
@@ -138,10 +144,10 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0">
+              <div className="flex items-center gap-3 shrink-0">
                 <button
-                  onClick={() => handleOpenRequirement({ prefillCategory: 'Enterprise SaaS Solution' })}
-                  className="btn-primary text-xs py-3.5 px-6 glow-blue"
+                  onClick={() => handleOpenRequirement({ prefillCategory: 'Enterprise SaaS' })}
+                  className="btn-primary py-3 px-5 text-xs sm:text-sm font-bold glow-blue shadow-xl shadow-red-600/20 flex items-center gap-2"
                 >
                   <span>Build Custom SaaS Product</span>
                   <ArrowRight className="w-4 h-4" />
@@ -150,7 +156,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* 1. Enterprise SaaS Products Showcase */}
           <SaaSShowcase
             onRequestDemo={(name) => handleOpenRequirement({ productName: name })}
             onTalkTeam={() => setIsConsultationModalOpen(true)}

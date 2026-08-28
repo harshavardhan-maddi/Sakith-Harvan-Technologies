@@ -3,7 +3,8 @@ import {
   Users, UserCheck, Briefcase, GraduationCap, Calendar, CheckCircle2, 
   Clock, ArrowRight, X, Sparkles, Edit3, Link as LinkIcon, AlertCircle, 
   TrendingUp, Check, RefreshCw, FileText, ChevronRight, LogOut, ShieldAlert,
-  Search, Award, Layers, Shield
+  Search, Award, Layers, Shield, Plus, Trash2, Crown, LayoutDashboard,
+  Filter, CheckSquare
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { INITIAL_TEAM_MEMBERS, INITIAL_ASSIGNED_TASKS } from '../data/defaultData';
@@ -12,21 +13,50 @@ import {
   fetchTasksFromSupabase, 
   saveTaskToSupabase, 
   updateTaskInSupabase,
+  deleteTaskFromSupabase,
+  saveTeamMemberToSupabase,
+  deleteTeamMemberFromSupabase,
   supabase
 } from '../lib/supabaseClient';
 
 export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', onOpenAdmin }) => {
-  // roleMode: 'employee' or 'intern'
+  // roleMode: 'founder', 'employee', or 'intern'
   const [roleMode, setRoleMode] = useState(initialRole);
   const [memberIdInput, setMemberIdInput] = useState('');
   const [authError, setAuthError] = useState('');
   const [authenticatedMember, setAuthenticatedMember] = useState(null);
 
+  // Founder & CEO Executive Tab State ('overview', 'manage_staff', 'all_tasks', 'my_tasks')
+  const [founderTab, setFounderTab] = useState('manage_staff');
+  const [founderStaffFilter, setFounderStaffFilter] = useState('all'); // 'all', 'employees', 'interns'
+
   // Data states
   const [teamMembers, setTeamMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
 
-  // Active editing task for work update
+  // Modals for Founder/CEO staff & work management
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [memberFormData, setMemberFormData] = useState({
+    id: '',
+    name: '',
+    role: '',
+    type: 'Employee',
+    email: '',
+    phone: ''
+  });
+
+  const [isAssigningTask, setIsAssigningTask] = useState(false);
+  const [taskFormData, setTaskFormData] = useState({
+    id: '',
+    memberId: '',
+    title: '',
+    description: '',
+    assignedDate: new Date().toISOString().split('T')[0],
+    dueDate: '',
+    priority: 'High'
+  });
+
+  // Active editing task for staff work update
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [workUpdateForm, setWorkUpdateForm] = useState({
     status: 'In Progress',
@@ -62,10 +92,17 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
 
     // Supabase realtime subscription
     const channel = supabase
-      .channel('public_staff_tasks')
+      .channel('public_staff_tasks_realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'assigned_tasks' },
+        () => {
+          loadData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'team_members' },
         () => {
           loadData();
         }
@@ -129,7 +166,22 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
     const cleanId = (memberIdInput || '').trim().toUpperCase();
 
     if (!cleanId) {
-      setAuthError('Please enter your Member ID.');
+      setAuthError('Please enter your ID or Access PIN.');
+      return;
+    }
+
+    // Check special Founder / CEO keys
+    if (cleanId === 'CEO' || cleanId === 'FOUNDER' || cleanId === '2526' || cleanId === 'SAKITH2026' || cleanId === 'ADMIN') {
+      const founderMember = teamMembers.find(m => m.id === 'CEO-01') || {
+        id: 'CEO-01',
+        name: 'Maddi Harshavardhan',
+        role: 'Co-Founder & CEO / Technical Lead',
+        type: 'Founder & CEO',
+        isExecutive: true
+      };
+      setAuthenticatedMember(founderMember);
+      setRoleMode('founder');
+      setAuthError('');
       return;
     }
 
@@ -140,19 +192,26 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
     );
 
     if (found) {
-      // Check if type matches or allow login seamlessly
       setAuthenticatedMember(found);
-      setRoleMode(found.type?.toLowerCase() === 'intern' ? 'intern' : 'employee');
+      if (found.isExecutive || found.type?.includes('Founder') || found.type?.includes('CEO')) {
+        setRoleMode('founder');
+      } else {
+        setRoleMode(found.type?.toLowerCase() === 'intern' ? 'intern' : 'employee');
+      }
       setAuthError('');
     } else {
-      setAuthError(`Member ID "${cleanId}" not found. Please verify your ID or ask Admin to register you.`);
+      setAuthError(`ID "${cleanId}" not recognized. Please verify or ask Admin/CEO.`);
     }
   };
 
   const handleQuickSelectMember = (member) => {
     setMemberIdInput(member.id);
     setAuthenticatedMember(member);
-    setRoleMode(member.type?.toLowerCase() === 'intern' ? 'intern' : 'employee');
+    if (member.isExecutive || member.type?.includes('Founder') || member.type?.includes('CEO')) {
+      setRoleMode('founder');
+    } else {
+      setRoleMode(member.type?.toLowerCase() === 'intern' ? 'intern' : 'employee');
+    }
     setAuthError('');
   };
 
@@ -163,7 +222,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
     setAuthError('');
   };
 
-  // Start editing a task
+  // Staff: Start editing work
   const handleStartUpdate = (task) => {
     setEditingTaskId(task.id);
     setWorkUpdateForm({
@@ -175,7 +234,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
     });
   };
 
-  // Save work update
+  // Staff: Save work update
   const handleSaveWorkUpdate = (taskId) => {
     const todayStr = new Date().toISOString().split('T')[0];
     const finalCompletedDate = workUpdateForm.status === 'Completed' 
@@ -215,9 +274,160 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
     setTimeout(() => setUpdateSuccessMsg(''), 4000);
   };
 
+  // Founder/CEO: Add Member handler
+  const handleOpenAddMember = (type = 'Employee') => {
+    const nextPrefix = type === 'Intern' ? 'INT-' : 'EMP-';
+    const count = teamMembers.filter(m => m.type === type).length + 101;
+    setMemberFormData({
+      id: `${nextPrefix}${count}`,
+      name: '',
+      role: type === 'Intern' ? 'AI/ML Solutions Intern' : 'Senior Full Stack Engineer',
+      type: type,
+      email: '',
+      phone: ''
+    });
+    setIsAddingMember(true);
+  };
+
+  const handleSaveMember = (e) => {
+    e.preventDefault();
+    if (!memberFormData.id || !memberFormData.name || !memberFormData.role) {
+      alert('Please fill out Member ID, Name, and Role.');
+      return;
+    }
+
+    const cleanId = memberFormData.id.trim().toUpperCase();
+    const newMember = {
+      ...memberFormData,
+      id: cleanId,
+      joinedDate: memberFormData.joinedDate || new Date().toISOString().split('T')[0],
+      status: 'Active'
+    };
+
+    let updatedTeam = [];
+    if (teamMembers.some(m => m.id.toUpperCase() === cleanId)) {
+      updatedTeam = teamMembers.map(m => m.id.toUpperCase() === cleanId ? newMember : m);
+    } else {
+      updatedTeam = [newMember, ...teamMembers];
+    }
+
+    setTeamMembers(updatedTeam);
+    localStorage.setItem('sh_team_members', JSON.stringify(updatedTeam));
+    saveTeamMemberToSupabase(newMember);
+    window.dispatchEvent(new Event('sh_team_updated'));
+    setIsAddingMember(false);
+    setUpdateSuccessMsg(`Successfully registered ${newMember.type} (${newMember.name})!`);
+    setTimeout(() => setUpdateSuccessMsg(''), 4000);
+  };
+
+  const handleDeleteMember = (id) => {
+    if (window.confirm(`Are you sure you want to remove team member ${id}?`)) {
+      const updated = teamMembers.filter(m => m.id !== id);
+      setTeamMembers(updated);
+      localStorage.setItem('sh_team_members', JSON.stringify(updated));
+      deleteTeamMemberFromSupabase(id);
+      window.dispatchEvent(new Event('sh_team_updated'));
+    }
+  };
+
+  // Founder/CEO: Assign Task handler
+  const handleOpenAssignTask = (prefillMemberId = '') => {
+    const nonFounders = teamMembers.filter(m => !m.isExecutive);
+    const defaultMember = teamMembers.find(m => m.id === prefillMemberId) || nonFounders[0] || teamMembers[0] || { id: 'EMP-101' };
+    setTaskFormData({
+      id: 'TSK-' + Math.floor(1000 + Math.random() * 9000),
+      memberId: defaultMember.id,
+      title: '',
+      description: '',
+      assignedDate: new Date().toISOString().split('T')[0],
+      dueDate: '',
+      priority: 'High'
+    });
+    setIsAssigningTask(true);
+  };
+
+  const handleSaveAssignedTask = (e) => {
+    e.preventDefault();
+    if (!taskFormData.memberId || !taskFormData.title) {
+      alert('Please select a team member and enter a task title.');
+      return;
+    }
+
+    const member = teamMembers.find(m => m.id === taskFormData.memberId) || {
+      name: 'Team Member',
+      role: 'Staff',
+      type: 'Employee'
+    };
+
+    const newTask = {
+      id: taskFormData.id || ('TSK-' + Date.now()),
+      memberId: taskFormData.memberId,
+      memberName: member.name,
+      memberRole: member.role,
+      memberType: member.type,
+      title: taskFormData.title,
+      description: taskFormData.description,
+      assignedDate: taskFormData.assignedDate || new Date().toISOString().split('T')[0],
+      dueDate: taskFormData.dueDate,
+      priority: taskFormData.priority,
+      status: 'Assigned',
+      progress: 0,
+      completedWorkNotes: '',
+      completedDate: '',
+      deliverableUrl: ''
+    };
+
+    const updated = [newTask, ...tasks];
+    setTasks(updated);
+    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
+    saveTaskToSupabase(newTask);
+    window.dispatchEvent(new Event('sh_tasks_updated'));
+    setIsAssigningTask(false);
+    setUpdateSuccessMsg(`Work assigned to ${member.name} (${member.id}) with Date: ${newTask.assignedDate}!`);
+    setTimeout(() => setUpdateSuccessMsg(''), 4000);
+  };
+
+  const handleDeleteTask = (id) => {
+    if (window.confirm('Delete this assigned task record?')) {
+      const updated = tasks.filter(t => t.id !== id);
+      setTasks(updated);
+      localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
+      deleteTaskFromSupabase(id);
+      window.dispatchEvent(new Event('sh_tasks_updated'));
+    }
+  };
+
+  const handleFounderUpdateTaskStatus = (id, newStatus) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const updated = tasks.map(t => {
+      if (t.id === id) {
+        return {
+          ...t,
+          status: newStatus,
+          progress: newStatus === 'Completed' ? 100 : (t.progress || 50),
+          completedDate: newStatus === 'Completed' ? todayStr : t.completedDate
+        };
+      }
+      return t;
+    });
+
+    setTasks(updated);
+    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
+    updateTaskInSupabase(id, {
+      status: newStatus,
+      progress: newStatus === 'Completed' ? 100 : undefined,
+      completedDate: newStatus === 'Completed' ? todayStr : undefined
+    });
+    window.dispatchEvent(new Event('sh_tasks_updated'));
+  };
+
   if (!isOpen) return null;
 
-  // Filter tasks for the logged in member
+  const isFounderUser = authenticatedMember?.isExecutive || 
+    authenticatedMember?.type?.includes('Founder') || 
+    authenticatedMember?.type?.includes('CEO');
+
+  // Filter tasks for standard member view
   const memberTasks = authenticatedMember
     ? tasks.filter(
         (t) => (t.memberId || '').toUpperCase() === (authenticatedMember.id || '').toUpperCase()
@@ -232,15 +442,14 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
 
   const completedCount = memberTasks.filter((t) => t.status === 'Completed').length;
   const inProgressCount = memberTasks.filter((t) => t.status === 'In Progress' || t.status === 'Assigned').length;
-  const overallAvgProgress = memberTasks.length > 0 
-    ? Math.round(memberTasks.reduce((acc, curr) => acc + (Number(curr.progress) || 0), 0) / memberTasks.length)
-    : 0;
 
-  // Available sample members for role mode
+  // Quick select lists
   const currentMembersList = teamMembers.length > 0 ? teamMembers : INITIAL_TEAM_MEMBERS;
-  const filteredQuickList = currentMembersList.filter(
-    (m) => (roleMode === 'intern' ? m.type === 'Intern' : m.type === 'Employee')
-  );
+  const filteredQuickList = currentMembersList.filter((m) => {
+    if (roleMode === 'founder') return m.isExecutive || m.type?.includes('Founder') || m.type?.includes('CEO');
+    if (roleMode === 'intern') return m.type === 'Intern';
+    return m.type === 'Employee';
+  });
 
   return (
     <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-xl flex flex-col min-h-screen w-full overflow-hidden text-slate-100 font-sans animate-in fade-in duration-300">
@@ -251,12 +460,26 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
           <div className="h-5 w-[1px] bg-white/20 hidden sm:block" />
           <div className="flex items-center gap-2">
             <span className={`px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 ${
-              roleMode === 'intern' 
-                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' 
-                : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+              isFounderUser || roleMode === 'founder'
+                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm'
+                : roleMode === 'intern' 
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' 
+                  : 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
             }`}>
-              {roleMode === 'intern' ? <GraduationCap className="w-3.5 h-3.5" /> : <Briefcase className="w-3.5 h-3.5" />}
-              <span>{roleMode === 'intern' ? 'Intern Work Portal' : 'Employee Work Portal'}</span>
+              {isFounderUser || roleMode === 'founder' ? (
+                <Crown className="w-3.5 h-3.5 text-rose-400" />
+              ) : roleMode === 'intern' ? (
+                <GraduationCap className="w-3.5 h-3.5" />
+              ) : (
+                <Briefcase className="w-3.5 h-3.5" />
+              )}
+              <span>
+                {isFounderUser || roleMode === 'founder'
+                  ? 'Founder & CEO Executive Portal'
+                  : roleMode === 'intern'
+                    ? 'Intern Work Portal'
+                    : 'Employee Work Portal'}
+              </span>
             </span>
           </div>
         </div>
@@ -289,24 +512,39 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
 
         {!authenticatedMember ? (
           /* =================================================================== */
-          /* LOGIN SCREEN: EMPLOYEE / INTERN ID LOGIN                            */
+          /* LOGIN SCREEN: FOUNDER / CEO / EMPLOYEE / INTERN LOGIN               */
           /* =================================================================== */
-          <div className="max-w-lg mx-auto my-auto pt-8 pb-16 space-y-8 z-10 relative">
-            {/* Mode Switcher Tabs */}
+          <div className="max-w-xl mx-auto my-auto pt-4 pb-16 space-y-6 z-10 relative">
+            {/* Mode Switcher 3-Tabs */}
             <div className="flex rounded-2xl bg-slate-900/90 p-1.5 border border-white/10 shadow-lg">
+              <button
+                onClick={() => {
+                  setRoleMode('founder');
+                  setAuthError('');
+                }}
+                className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  roleMode === 'founder'
+                    ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-600/30'
+                    : 'text-slate-400 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                <Crown className="w-4 h-4 text-amber-300" />
+                <span>Founder &amp; CEO</span>
+              </button>
+
               <button
                 onClick={() => {
                   setRoleMode('employee');
                   setAuthError('');
                 }}
-                className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   roleMode === 'employee'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <Briefcase className="w-4 h-4" />
-                <span>Employee Login</span>
+                <span>Employee</span>
               </button>
 
               <button
@@ -314,27 +552,35 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                   setRoleMode('intern');
                   setAuthError('');
                 }}
-                className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                   roleMode === 'intern'
                     ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 }`}
               >
                 <GraduationCap className="w-4 h-4" />
-                <span>Intern Login</span>
+                <span>Intern</span>
               </button>
             </div>
 
             {/* Login Card */}
             <div className={`glass-card p-8 rounded-3xl border shadow-2xl space-y-6 text-center ${
-              roleMode === 'intern' ? 'border-amber-500/30 shadow-amber-950/20' : 'border-blue-500/30 shadow-blue-950/20'
+              roleMode === 'founder'
+                ? 'border-red-500/40 shadow-red-950/30 glow-blue'
+                : roleMode === 'intern'
+                  ? 'border-amber-500/30 shadow-amber-950/20'
+                  : 'border-blue-500/30 shadow-blue-950/20'
             }`}>
               <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center mx-auto shadow-lg ${
-                roleMode === 'intern'
-                  ? 'bg-amber-950/60 border-amber-500/40 text-amber-400 shadow-amber-500/20'
-                  : 'bg-blue-950/60 border-blue-500/40 text-cyan-400 shadow-blue-500/20'
+                roleMode === 'founder'
+                  ? 'bg-red-950/80 border-red-500/50 text-amber-300 shadow-red-500/30'
+                  : roleMode === 'intern'
+                    ? 'bg-amber-950/60 border-amber-500/40 text-amber-400 shadow-amber-500/20'
+                    : 'bg-blue-950/60 border-blue-500/40 text-cyan-400 shadow-blue-500/20'
               }`}>
-                {roleMode === 'intern' ? (
+                {roleMode === 'founder' ? (
+                  <Crown className="w-8 h-8 animate-pulse text-amber-300" />
+                ) : roleMode === 'intern' ? (
                   <GraduationCap className="w-8 h-8 animate-pulse" />
                 ) : (
                   <Briefcase className="w-8 h-8 animate-pulse" />
@@ -343,17 +589,23 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
 
               <div className="space-y-1">
                 <h2 className="text-2xl font-extrabold text-white tracking-tight">
-                  {roleMode === 'intern' ? 'Intern Work Dashboard' : 'Employee Work Dashboard'}
+                  {roleMode === 'founder'
+                    ? 'Founder & CEO Management Portal'
+                    : roleMode === 'intern'
+                      ? 'Intern Work Dashboard'
+                      : 'Employee Work Dashboard'}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Enter your registered ID to view assigned tasks and update work progress.
+                  {roleMode === 'founder'
+                    ? 'Manage other employees & interns, assign development work, and review completed deliverables.'
+                    : 'Enter your assigned ID to view tasks and update your present completed work.'}
                 </p>
               </div>
 
               <form onSubmit={handleLogin} className="space-y-4 pt-2">
                 <div className="space-y-1.5 text-left">
                   <label className="block text-xs font-semibold text-slate-300">
-                    {roleMode === 'intern' ? 'Intern ID *' : 'Employee ID *'}
+                    {roleMode === 'founder' ? 'Founder / CEO ID or Access PIN *' : `${roleMode === 'intern' ? 'Intern' : 'Employee'} ID *`}
                   </label>
                   <div className="relative">
                     <UserCheck className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -364,7 +616,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                         setMemberIdInput(e.target.value);
                         setAuthError('');
                       }}
-                      placeholder={roleMode === 'intern' ? 'e.g. INT-201' : 'e.g. EMP-101'}
+                      placeholder={roleMode === 'founder' ? 'e.g. CEO-01 or PIN 2526' : roleMode === 'intern' ? 'e.g. INT-201' : 'e.g. EMP-101'}
                       className="form-input pl-10 uppercase font-mono tracking-wider text-sm font-semibold border-white/20 focus:border-cyan-400"
                       autoFocus
                     />
@@ -380,21 +632,27 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                 <button
                   type="submit"
                   className={`w-full py-3.5 rounded-xl text-sm font-bold text-white shadow-xl flex items-center justify-center gap-2 transition-all transform active:scale-98 ${
-                    roleMode === 'intern'
-                      ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-600/30'
-                      : 'btn-primary'
+                    roleMode === 'founder'
+                      ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 shadow-red-600/30'
+                      : roleMode === 'intern'
+                        ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 shadow-amber-600/30'
+                        : 'btn-primary'
                   }`}
                 >
                   <UserCheck className="w-4 h-4" />
-                  <span>Log In to {roleMode === 'intern' ? 'Intern' : 'Employee'} Portal</span>
+                  <span>
+                    {roleMode === 'founder'
+                      ? 'Unlock Founder & CEO Management Center'
+                      : `Log In to ${roleMode === 'intern' ? 'Intern' : 'Employee'} Portal`}
+                  </span>
                 </button>
               </form>
 
-              {/* Quick Select Chips for Faster Testing */}
+              {/* Quick Select Chips */}
               <div className="pt-4 border-t border-white/10 space-y-2.5 text-left">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    Quick Select Active {roleMode === 'intern' ? 'Interns' : 'Employees'}:
+                    Quick Select Active {roleMode === 'founder' ? 'Leadership' : roleMode === 'intern' ? 'Interns' : 'Employees'}:
                   </span>
                   <span className="text-[10px] text-cyan-400 font-mono">1-Click Auto Login</span>
                 </div>
@@ -408,8 +666,9 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                       className="p-2.5 rounded-xl bg-slate-900/90 border border-white/10 hover:border-cyan-400/60 hover:bg-slate-800 text-left transition-all flex items-center justify-between group"
                     >
                       <div className="truncate pr-2">
-                        <div className="text-xs font-bold text-white group-hover:text-cyan-400 truncate">
-                          {m.name}
+                        <div className="text-xs font-bold text-white group-hover:text-cyan-400 truncate flex items-center gap-1">
+                          {m.isExecutive && <Crown className="w-3 h-3 text-amber-300 shrink-0" />}
+                          <span className="truncate">{m.name}</span>
                         </div>
                         <div className="text-[10px] text-slate-400 font-mono truncate">{m.id} • {m.role}</div>
                       </div>
@@ -418,26 +677,463 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+        ) : isFounderUser ? (
+          /* =================================================================== */
+          /* FOUNDER & CEO EXECUTIVE DASHBOARD: MANAGE EMPLOYEES & INTERNS       */
+          /* =================================================================== */
+          <div className="max-w-6xl mx-auto space-y-6 pb-16 z-10 relative animate-in fade-in duration-300">
+            {/* Success Toast */}
+            {updateSuccessMsg && (
+              <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs sm:text-sm font-semibold flex items-center justify-between shadow-xl animate-in slide-in-from-top duration-300">
+                <div className="flex items-center gap-2.5">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  <span>{updateSuccessMsg}</span>
+                </div>
+                <button onClick={() => setUpdateSuccessMsg('')} className="text-emerald-400 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
 
-              {/* Admin note */}
-              <div className="pt-2 text-center text-xs text-slate-400">
-                <span>Not added yet? Contact the main admin or </span>
+            {/* Founder Leadership Header Card */}
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-red-500/40 bg-gradient-to-r from-slate-900 via-red-950/40 to-slate-900 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 glow-blue">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-2xl border bg-gradient-to-br from-red-950 via-slate-900 to-red-900 border-red-500/50 text-amber-300 flex items-center justify-center text-2xl font-bold shadow-lg shadow-red-500/20">
+                  <Crown className="w-8 h-8 text-amber-300 animate-pulse" />
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-xl sm:text-2xl font-extrabold text-white">
+                      {authenticatedMember.name}
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full font-mono text-xs font-bold bg-slate-800 border border-white/20 text-cyan-400">
+                      {authenticatedMember.id}
+                    </span>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white shadow-md shadow-red-600/30 flex items-center gap-1">
+                      <Crown className="w-3 h-3 text-amber-300" />
+                      <span>{authenticatedMember.type || 'Founder & CEO'}</span>
+                    </span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-200 font-medium">
+                    {authenticatedMember.role} • Sakith Harvan Technologies Executive Board
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Full Leadership Rights: Managing Employees, Interns &amp; Technical Work Allocation
+                  </p>
+                </div>
+              </div>
+
+              {/* Founder Quick Actions */}
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    if (onOpenAdmin) onOpenAdmin();
-                  }}
-                  className="text-cyan-400 hover:underline font-semibold"
+                  onClick={() => handleOpenAddMember('Employee')}
+                  className="btn-primary text-xs py-2.5 px-4 font-bold flex items-center gap-2 shadow-lg shadow-red-600/20"
                 >
-                  Open Admin Portal
+                  <Briefcase className="w-4 h-4" />
+                  <span>Add Employee</span>
+                </button>
+
+                <button
+                  onClick={() => handleOpenAddMember('Intern')}
+                  className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span>Add Intern</span>
+                </button>
+
+                <button
+                  onClick={() => handleOpenAssignTask('')}
+                  className="btn-cyan text-xs py-2.5 px-4 font-bold flex items-center gap-2 shadow-lg shadow-cyan-600/20"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Assign Work</span>
                 </button>
               </div>
             </div>
+
+            {/* Founder Sub-Navigation Tabs */}
+            <div className="flex items-center gap-2 border-b border-white/10 pb-3 flex-wrap">
+              {[
+                { id: 'manage_staff', label: `👥 Manage Employees & Interns (${teamMembers.length})` },
+                { id: 'all_tasks', label: `📊 Company Work Tracker & Review (${tasks.length})` },
+                { id: 'my_tasks', label: `📝 My Directives (${memberTasks.length})` }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFounderTab(tab.id)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    founderTab === tab.id
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                      : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {/* TAB 1: MANAGE EMPLOYEES & INTERNS DIRECTORY */}
+            {founderTab === 'manage_staff' && (
+              <div className="space-y-6 animate-in fade-in duration-200">
+                {/* Secondary filter */}
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-2 bg-slate-900/90 p-1 rounded-xl border border-white/10">
+                    {[
+                      { id: 'all', label: `All Staff (${teamMembers.length})` },
+                      { id: 'employees', label: `Employees (${teamMembers.filter(m => m.type === 'Employee').length})` },
+                      { id: 'interns', label: `Interns (${teamMembers.filter(m => m.type === 'Intern').length})` }
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        onClick={() => setFounderStaffFilter(f.id)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          founderStaffFilter === f.id
+                            ? 'bg-slate-800 text-cyan-400 shadow-md font-bold'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleOpenAddMember('Employee')}
+                      className="btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Employee</span>
+                    </button>
+                    <button
+                      onClick={() => handleOpenAddMember('Intern')}
+                      className="btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 text-amber-400 border-amber-500/30"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Intern</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Team Members Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {teamMembers
+                    .filter((m) => {
+                      if (founderStaffFilter === 'employees') return m.type === 'Employee';
+                      if (founderStaffFilter === 'interns') return m.type === 'Intern';
+                      return true;
+                    })
+                    .map((member) => {
+                      const memberTaskList = tasks.filter(
+                        (t) => (t.memberId || '').toUpperCase() === member.id.toUpperCase()
+                      );
+                      const activeCount = memberTaskList.filter((t) => t.status !== 'Completed').length;
+                      const isIntern = member.type === 'Intern';
+                      const isFounderCard = member.isExecutive;
+
+                      return (
+                        <div
+                          key={member.id}
+                          className={`glass-card p-5 rounded-2xl border space-y-4 transition-all hover:scale-[1.01] ${
+                            isFounderCard
+                              ? 'border-red-500/40 bg-slate-900/90 glow-blue'
+                              : isIntern
+                                ? 'border-amber-500/30 bg-slate-900/80'
+                                : 'border-blue-500/30 bg-slate-900/80'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg ${
+                                isFounderCard
+                                  ? 'bg-red-950/70 text-amber-300 border border-red-500/40'
+                                  : isIntern
+                                    ? 'bg-amber-950/70 text-amber-400 border border-amber-500/40'
+                                    : 'bg-blue-950/70 text-cyan-400 border border-blue-500/40'
+                              }`}>
+                                {member.name ? member.name.charAt(0) : 'M'}
+                              </div>
+                              <div>
+                                <h5 className="text-sm font-bold text-white flex items-center gap-1.5">
+                                  {member.name}
+                                  {isFounderCard && <Crown className="w-3.5 h-3.5 text-amber-300" />}
+                                </h5>
+                                <p className="text-xs text-slate-300">{member.role}</p>
+                              </div>
+                            </div>
+
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                              isFounderCard
+                                ? 'bg-red-600 text-white'
+                                : isIntern
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  : 'bg-blue-500/20 text-cyan-300 border border-blue-500/40'
+                            }`}>
+                              {member.type}
+                            </span>
+                          </div>
+
+                          <div className="p-3 rounded-xl bg-slate-950/80 border border-white/5 space-y-1.5 text-xs font-mono">
+                            <div className="flex justify-between text-slate-400">
+                              <span>ID:</span>
+                              <span className="text-white font-bold">{member.id}</span>
+                            </div>
+                            <div className="flex justify-between text-slate-400">
+                              <span>Active Work:</span>
+                              <span className={activeCount > 0 ? 'text-amber-400 font-bold' : 'text-emerald-400'}>
+                                {activeCount} active ({memberTaskList.length} total)
+                              </span>
+                            </div>
+                            {member.email && (
+                              <div className="flex justify-between text-slate-400 truncate">
+                                <span>Email:</span>
+                                <span className="text-slate-300 truncate max-w-[150px]">{member.email}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/10">
+                            <button
+                              onClick={() => handleOpenAssignTask(member.id)}
+                              className="btn-cyan py-1.5 px-3 text-xs flex items-center gap-1.5 font-semibold"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Assign Work</span>
+                            </button>
+
+                            {!isFounderCard && (
+                              <button
+                                onClick={() => handleDeleteMember(member.id)}
+                                className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
+                                title="Remove Member"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: COMPANY WORK TRACKER & REVIEW */}
+            {founderTab === 'all_tasks' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-base font-bold text-white flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-cyan-400" />
+                      <span>Company-Wide Assigned Work &amp; Deliverables Review</span>
+                    </h4>
+                    <p className="text-xs text-slate-400">
+                      Founder &amp; CEO review center for monitoring assigned dates, daily work notes, progress %, and deliverables.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => handleOpenAssignTask('')}
+                    className="btn-cyan text-xs py-2 px-4 flex items-center gap-2 font-bold"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Assign New Work</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {tasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className={`glass-card p-6 rounded-2xl border transition-all ${
+                        task.status === 'Completed'
+                          ? 'border-emerald-500/30 bg-slate-900/90'
+                          : 'border-blue-500/30 bg-slate-900/90'
+                      }`}
+                    >
+                      <div className="space-y-4">
+                        {/* Header Details */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-xs font-bold text-cyan-400 bg-slate-950 px-2.5 py-1 rounded-lg border border-white/10">
+                                {task.id}
+                              </span>
+                              <span className="font-semibold text-xs text-white bg-slate-800 px-2.5 py-1 rounded-lg">
+                                Member: <strong className="text-cyan-300">{task.memberName}</strong> ({task.memberId})
+                              </span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                task.memberType === 'Intern'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  : 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                              }`}>
+                                {task.memberType || 'Employee'}
+                              </span>
+                              <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                task.priority === 'High' 
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              }`}>
+                                Priority: {task.priority || 'Medium'}
+                              </span>
+                            </div>
+                            <h5 className="text-base font-bold text-white pt-1">{task.title}</h5>
+                          </div>
+
+                          {/* Date of Assigned Work and Due Date */}
+                          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                            <div className="bg-slate-950/90 border border-cyan-500/30 px-3.5 py-1.5 rounded-xl text-left">
+                              <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                <span>Date of Assigned Work</span>
+                              </div>
+                              <div className="text-xs font-mono font-bold text-white">
+                                {task.assignedDate || '2026-08-28'}
+                              </div>
+                            </div>
+
+                            {task.dueDate && (
+                              <div className="bg-slate-950/90 border border-amber-500/30 px-3.5 py-1.5 rounded-xl text-left">
+                                <div className="text-[10px] text-amber-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  <span>Deadline</span>
+                                </div>
+                                <div className="text-xs font-mono font-bold text-white">
+                                  {task.dueDate}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Task Scope */}
+                        <div className="text-xs text-slate-300 bg-slate-950/40 p-3 rounded-xl border border-white/5">
+                          <span className="font-semibold text-slate-400 block pb-1">Work Description:</span>
+                          {task.description || 'Deliver assigned technical milestone.'}
+                        </div>
+
+                        {/* PRESENT COMPLETED WORK SECTION */}
+                        <div className="p-4 rounded-xl bg-slate-950/80 border border-white/10 space-y-2.5">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold text-white">Present Completed Work:</span>
+                              <span className="text-xs font-mono font-extrabold text-cyan-400">
+                                {task.progress || 0}%
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              {task.completedDate && (
+                                <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  <span>Completed Date: {task.completedDate}</span>
+                                </span>
+                              )}
+
+                              {/* Founder Quick Status Updater */}
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[11px] text-slate-400">Status:</span>
+                                <select
+                                  value={task.status}
+                                  onChange={(e) => handleFounderUpdateTaskStatus(task.id, e.target.value)}
+                                  className="bg-slate-900 border border-white/20 rounded-lg text-xs py-1 px-2.5 text-cyan-400 font-semibold"
+                                >
+                                  <option value="Assigned">Assigned</option>
+                                  <option value="In Progress">In Progress</option>
+                                  <option value="Under Review">Under Review</option>
+                                  <option value="Completed">Completed</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                task.status === 'Completed' ? 'bg-emerald-400' : 'bg-cyan-400'
+                              }`}
+                              style={{ width: `${task.progress || 0}%` }}
+                            />
+                          </div>
+
+                          {/* Notes */}
+                          {task.completedWorkNotes && (
+                            <div className="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-white/5">
+                              <span className="font-semibold text-slate-400 block pb-0.5">Staff Progress Update:</span>
+                              {task.completedWorkNotes}
+                            </div>
+                          )}
+
+                          {task.deliverableUrl && (
+                            <div className="pt-1">
+                              <a
+                                href={task.deliverableUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 font-semibold hover:underline"
+                              >
+                                <LinkIcon className="w-3 h-3" />
+                                <span>View Submitted Deliverable / PR</span>
+                              </a>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-white/10">
+                          <button
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="text-xs text-red-400 hover:text-red-300 p-1.5 flex items-center gap-1 hover:bg-red-950/40 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Delete Task</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: MY DIRECTIVES */}
+            {founderTab === 'my_tasks' && (
+              <div className="space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-bold text-white">
+                    Directives &amp; Tasks Assigned to {authenticatedMember.name} ({memberTasks.length})
+                  </h4>
+                </div>
+
+                {memberTasks.length === 0 ? (
+                  <div className="glass-card p-8 rounded-2xl border border-white/10 text-center text-slate-400 text-xs">
+                    No personal directives assigned. Use "Assign Work" to assign tasks to other employees/interns.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {memberTasks.map((t) => (
+                      <div key={t.id} className="glass-card p-6 rounded-2xl border border-blue-500/30 space-y-3">
+                        <div className="flex justify-between items-start">
+                          <h5 className="font-bold text-white text-base">{t.title}</h5>
+                          <span className="text-xs font-mono text-cyan-400 bg-slate-900 px-2.5 py-1 rounded-lg border border-white/10">
+                            Assigned: {t.assignedDate}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-300">{t.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           /* =================================================================== */
-          /* LOGGED IN WORK DASHBOARD VIEW                                      */
+          /* STANDARD EMPLOYEE & INTERN WORK DASHBOARD VIEW                     */
           /* =================================================================== */
           <div className="max-w-6xl mx-auto space-y-6 pb-16 z-10 relative">
             {/* Success Toast */}
@@ -453,7 +1149,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
               </div>
             )}
 
-            {/* Profile & Performance Header Card */}
+            {/* Profile Header */}
             <div className="glass-card p-6 sm:p-8 rounded-3xl border border-white/10 bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-950 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
                 <div className={`w-16 h-16 rounded-2xl border flex items-center justify-center text-2xl font-bold shadow-lg ${
@@ -484,7 +1180,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                     {authenticatedMember.role}
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Registered with Sakith Harvan Technologies • Joined: {authenticatedMember.joinedDate || 'Active'}
+                    Managed by Sakith Harvan Technologies Founders • Joined: {authenticatedMember.joinedDate || 'Active'}
                   </p>
                 </div>
               </div>
@@ -546,7 +1242,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                 <div className="space-y-1">
                   <h4 className="text-base font-bold text-white">No tasks currently under "{taskFilter}"</h4>
                   <p className="text-xs text-slate-400 max-w-sm mx-auto">
-                    New work assigned by the Main Admin will appear here instantly.
+                    New work assigned by Founder &amp; CEO will appear here instantly.
                   </p>
                 </div>
               </div>
@@ -564,7 +1260,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                           : 'border-blue-500/30 bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950'
                       }`}
                     >
-                      {/* Task Header Details */}
+                      {/* Task Header */}
                       <div className="p-6 space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
                           <div className="space-y-1">
@@ -591,7 +1287,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                             <h4 className="text-lg font-bold text-white pt-1">{task.title}</h4>
                           </div>
 
-                          {/* KEY REQUIREMENT: Show Date of Assigned Work & Due Date */}
+                          {/* Date of Assigned Work and Due Date */}
                           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                             <div className="bg-slate-950/80 border border-cyan-500/30 px-3.5 py-1.5 rounded-xl text-left">
                               <div className="text-[10px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1">
@@ -617,7 +1313,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                           </div>
                         </div>
 
-                        {/* Task Description */}
+                        {/* Scope */}
                         <div className="space-y-1.5">
                           <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                             Work Description &amp; Requirements:
@@ -698,9 +1394,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                           </div>
                         )}
 
-                        {/* =================================================================== */}
-                        {/* PRESENT WORK UPDATION FORM (Edit Mode)                              */}
-                        {/* =================================================================== */}
+                        {/* PRESENT WORK UPDATION FORM (Edit Mode) */}
                         {isEditing && (
                           <div className="p-5 rounded-2xl bg-slate-900 border border-cyan-500/40 space-y-4 animate-in fade-in duration-200">
                             <div className="flex items-center justify-between border-b border-white/10 pb-3">
@@ -840,6 +1534,287 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
           </div>
         )}
       </div>
+
+      {/* =================================================================== */}
+      {/* MODAL: ADD EMPLOYEE / INTERN (FOUNDER & CEO PRIVILEGE)             */}
+      {/* =================================================================== */}
+      {isAddingMember && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="glass-card max-w-md w-full p-6 sm:p-8 rounded-3xl border border-blue-500/50 space-y-5 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                {memberFormData.type === 'Intern' ? (
+                  <GraduationCap className="w-5 h-5 text-amber-400" />
+                ) : (
+                  <Briefcase className="w-5 h-5 text-cyan-400" />
+                )}
+                <h4 className="text-lg font-bold text-white">
+                  Add New {memberFormData.type === 'Intern' ? 'Intern' : 'Employee'}
+                </h4>
+              </div>
+              <button
+                onClick={() => setIsAddingMember(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMember} className="space-y-4 text-xs">
+              {/* Type Switcher */}
+              <div className="space-y-1">
+                <label className="block font-semibold text-slate-300">Member Type *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const count = teamMembers.filter(m => m.type === 'Employee').length + 101;
+                      setMemberFormData({ ...memberFormData, type: 'Employee', id: `EMP-${count}` });
+                    }}
+                    className={`py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      memberFormData.type === 'Employee'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
+                    }`}
+                  >
+                    <Briefcase className="w-3.5 h-3.5" />
+                    <span>Employee</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const count = teamMembers.filter(m => m.type === 'Intern').length + 101;
+                      setMemberFormData({ ...memberFormData, type: 'Intern', id: `INT-${count}` });
+                    }}
+                    className={`py-2 px-3 rounded-xl font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      memberFormData.type === 'Intern'
+                        ? 'bg-amber-600 text-white shadow-md'
+                        : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
+                    }`}
+                  >
+                    <GraduationCap className="w-3.5 h-3.5" />
+                    <span>Intern</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* ID & Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    {memberFormData.type} ID *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={memberFormData.id}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, id: e.target.value.toUpperCase() })}
+                    placeholder={memberFormData.type === 'Intern' ? 'e.g. INT-203' : 'e.g. EMP-103'}
+                    className="form-input text-xs uppercase font-mono tracking-wider"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={memberFormData.name}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, name: e.target.value })}
+                    placeholder="e.g. S. Sandeep Kumar"
+                    className="form-input text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Role */}
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Role / Job Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={memberFormData.role}
+                  onChange={(e) => setMemberFormData({ ...memberFormData, role: e.target.value })}
+                  placeholder={memberFormData.type === 'Intern' ? 'e.g. React & AI/ML Intern' : 'e.g. Senior Full Stack Engineer'}
+                  className="form-input text-xs"
+                />
+              </div>
+
+              {/* Contact details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Official / Personal Email</label>
+                  <input
+                    type="email"
+                    value={memberFormData.email}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, email: e.target.value })}
+                    placeholder="name@sakithharvan.com"
+                    className="form-input text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={memberFormData.phone}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, phone: e.target.value })}
+                    placeholder="+91 98480..."
+                    className="form-input text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsAddingMember(false)}
+                  className="btn-secondary py-2 px-4 text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`py-2 px-5 text-xs font-bold rounded-xl text-white shadow-lg transition-all ${
+                    memberFormData.type === 'Intern'
+                      ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-600/30'
+                      : 'btn-primary'
+                  }`}
+                >
+                  <span>Register {memberFormData.type}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODAL: ASSIGN WORK / TASK (FOUNDER & CEO PRIVILEGE)                */}
+      {/* =================================================================== */}
+      {isAssigningTask && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="glass-card max-w-xl w-full p-6 sm:p-8 rounded-3xl border border-cyan-500/50 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Plus className="w-5 h-5 text-cyan-400" />
+                <h4 className="text-lg font-bold text-white">Assign Work / Task to Team Member</h4>
+              </div>
+              <button
+                onClick={() => setIsAssigningTask(false)}
+                className="text-slate-400 hover:text-white p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveAssignedTask} className="space-y-4 text-xs">
+              {/* Select Member */}
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Select Employee / Intern *
+                </label>
+                <select
+                  required
+                  value={taskFormData.memberId}
+                  onChange={(e) => setTaskFormData({ ...taskFormData, memberId: e.target.value })}
+                  className="form-input text-xs font-medium"
+                >
+                  {teamMembers.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      [{m.id}] {m.name} — {m.role} ({m.type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Task Title */}
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Work / Task Title *</label>
+                <input
+                  type="text"
+                  required
+                  value={taskFormData.title}
+                  onChange={(e) => setTaskFormData({ ...taskFormData, title: e.target.value })}
+                  placeholder="e.g. Implement Attendance Module API Endpoints"
+                  className="form-input text-xs"
+                />
+              </div>
+
+              {/* Assigned Date & Due Date & Priority */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">
+                    Date of Assigned Work *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={taskFormData.assignedDate}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, assignedDate: e.target.value })}
+                    className="form-input text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Deadline / Target Date</label>
+                  <input
+                    type="date"
+                    value={taskFormData.dueDate}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, dueDate: e.target.value })}
+                    className="form-input text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Priority</label>
+                  <select
+                    value={taskFormData.priority}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, priority: e.target.value })}
+                    className="form-input text-xs"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">
+                  Detailed Work Description &amp; Deliverables *
+                </label>
+                <textarea
+                  rows="3"
+                  required
+                  value={taskFormData.description}
+                  onChange={(e) => setTaskFormData({ ...taskFormData, description: e.target.value })}
+                  placeholder="Specify task scope, modules, tech stack, testing criteria, and deliverables expected..."
+                  className="form-input text-xs font-sans"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => setIsAssigningTask(false)}
+                  className="btn-secondary py-2 px-4 text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-cyan py-2 px-5 text-xs font-bold shadow-md shadow-cyan-500/30"
+                >
+                  <span>Assign Work to Member</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
