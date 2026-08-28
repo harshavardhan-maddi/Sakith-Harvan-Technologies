@@ -86,13 +86,51 @@ CREATE TABLE IF NOT EXISTS public.workshops (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 5. TEAM MEMBERS TABLE (Employees & Interns)
+CREATE TABLE IF NOT EXISTS public.team_members (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'Employee' or 'Intern'
+    email TEXT,
+    phone TEXT,
+    "joinedDate" TEXT,
+    status TEXT DEFAULT 'Active',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 6. ASSIGNED TASKS TABLE (Work Assignment & Progress Updation)
+CREATE TABLE IF NOT EXISTS public.assigned_tasks (
+    id TEXT PRIMARY KEY,
+    "memberId" TEXT NOT NULL,
+    "memberName" TEXT NOT NULL,
+    "memberRole" TEXT,
+    "memberType" TEXT,
+    title TEXT NOT NULL,
+    description TEXT,
+    "assignedDate" TEXT NOT NULL,
+    "dueDate" TEXT,
+    priority TEXT DEFAULT 'Medium',
+    status TEXT DEFAULT 'Assigned', -- 'Assigned', 'In Progress', 'Completed', 'Review'
+    progress NUMERIC DEFAULT 0,
+    "completedWorkNotes" TEXT,
+    "completedDate" TEXT,
+    "deliverableUrl" TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ENABLE ROW LEVEL SECURITY (RLS) & ALLOW ANON ACCESS
 ALTER TABLE public.consultations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.requirements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quotations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.workshops ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.assigned_tasks ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow anon read/write consultations" ON public.consultations FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon read/write requirements" ON public.requirements FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon read/write quotations" ON public.quotations FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow anon read/write workshops" ON public.workshops FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon read/write team_members" ON public.team_members FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow anon read/write assigned_tasks" ON public.assigned_tasks FOR ALL USING (true) WITH CHECK (true);
+

@@ -11,6 +11,7 @@ import { ConsultationBooking } from './components/ConsultationBooking';
 import { RequirementFormModal } from './components/RequirementFormModal';
 import { WorkshopBookingModal } from './components/WorkshopBookingModal';
 import { AdminPortalModal } from './components/AdminPortalModal';
+import { StaffPortalModal } from './components/StaffPortalModal';
 import { IntroSplash } from './components/IntroSplash';
 import { Footer } from './components/Footer';
 import { Sparkles, Calendar, X, CheckCircle2, PhoneCall, Layers, BookOpen, ArrowRight, ShieldCheck, Users } from 'lucide-react';
@@ -21,6 +22,20 @@ export default function App() {
   const [isConsultationModalOpen, setIsConsultationModalOpen] = useState(false);
   const [isRequirementModalOpen, setIsRequirementModalOpen] = useState(false);
   const [requirementInitialProduct, setRequirementInitialProduct] = useState('');
+
+  // Staff Portal (Employee & Intern Login) State
+  const [isStaffPortalOpen, setIsStaffPortalOpen] = useState(false);
+  const [staffPortalRole, setStaffPortalRole] = useState('employee'); // 'employee' or 'intern'
+
+  const handleOpenEmpLogin = () => {
+    setStaffPortalRole('employee');
+    setIsStaffPortalOpen(true);
+  };
+
+  const handleOpenInternLogin = () => {
+    setStaffPortalRole('intern');
+    setIsStaffPortalOpen(true);
+  };
 
   // Website Color Theme Toggle State (Red Present <-> Blue Cyber)
   const [theme, setTheme] = useState(() => {
@@ -79,6 +94,8 @@ export default function App() {
         onOpenConsultation={() => setIsConsultationModalOpen(true)}
         onOpenRequirement={() => handleOpenRequirement({})}
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
+        onOpenEmpLogin={handleOpenEmpLogin}
+        onOpenInternLogin={handleOpenInternLogin}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -320,6 +337,16 @@ export default function App() {
       <AdminPortalModal
         isOpen={isAdminPortalOpen}
         onClose={() => setIsAdminPortalOpen(false)}
+        onOpenEmpLogin={handleOpenEmpLogin}
+        onOpenInternLogin={handleOpenInternLogin}
+      />
+
+      {/* 5. Modal Employee & Intern Work Portal */}
+      <StaffPortalModal
+        isOpen={isStaffPortalOpen}
+        onClose={() => setIsStaffPortalOpen(false)}
+        initialRole={staffPortalRole}
+        onOpenAdmin={() => setIsAdminPortalOpen(true)}
       />
 
       {/* Toast Notification Banner */}
@@ -339,7 +366,10 @@ export default function App() {
         onOpenConsultation={() => setIsConsultationModalOpen(true)}
         onOpenRequirement={handleOpenRequirement}
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
+        onOpenEmpLogin={handleOpenEmpLogin}
+        onOpenInternLogin={handleOpenInternLogin}
       />
     </div>
   );
 }
+

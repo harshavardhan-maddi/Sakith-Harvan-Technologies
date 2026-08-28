@@ -207,3 +207,106 @@ export const deleteWorkshopFromSupabase = async (id) => {
     console.warn('Supabase connection error:', err);
   }
 };
+
+/* =================================================================== */
+/* SUPABASE TEAM MEMBERS HELPERS (Employees & Interns)                 */
+/* =================================================================== */
+export const saveTeamMemberToSupabase = async (memberObject) => {
+  try {
+    const { data, error } = await supabase
+      .from('team_members')
+      .upsert([memberObject], { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase team_members upsert warning:', error.message);
+    } else {
+      console.log('Successfully synced team member to Supabase:', data);
+    }
+  } catch (err) {
+    console.warn('Supabase team_members connection error:', err);
+  }
+};
+
+export const fetchTeamMembersFromSupabase = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase fetch team_members error:', err);
+  }
+  return null;
+};
+
+export const deleteTeamMemberFromSupabase = async (id) => {
+  try {
+    const { error } = await supabase
+      .from('team_members')
+      .delete()
+      .eq('id', id);
+    if (error) console.warn('Supabase delete team member error:', error.message);
+  } catch (err) {
+    console.warn('Supabase connection error:', err);
+  }
+};
+
+/* =================================================================== */
+/* SUPABASE ASSIGNED TASKS HELPERS (Work Assignment & Progress)       */
+/* =================================================================== */
+export const saveTaskToSupabase = async (taskObject) => {
+  try {
+    const { data, error } = await supabase
+      .from('assigned_tasks')
+      .upsert([taskObject], { onConflict: 'id' });
+    if (error) {
+      console.warn('Supabase assigned_tasks upsert warning:', error.message);
+    } else {
+      console.log('Successfully synced task to Supabase:', data);
+    }
+  } catch (err) {
+    console.warn('Supabase assigned_tasks connection error:', err);
+  }
+};
+
+export const fetchTasksFromSupabase = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('assigned_tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Supabase fetch assigned_tasks error:', err);
+  }
+  return null;
+};
+
+export const updateTaskInSupabase = async (id, updateFields) => {
+  try {
+    const { error } = await supabase
+      .from('assigned_tasks')
+      .update(updateFields)
+      .eq('id', id);
+    if (error) console.warn('Supabase update task error:', error.message);
+  } catch (err) {
+    console.warn('Supabase connection error:', err);
+  }
+};
+
+export const deleteTaskFromSupabase = async (id) => {
+  try {
+    const { error } = await supabase
+      .from('assigned_tasks')
+      .delete()
+      .eq('id', id);
+    if (error) console.warn('Supabase delete task error:', error.message);
+  } catch (err) {
+    console.warn('Supabase connection error:', err);
+  }
+};
+

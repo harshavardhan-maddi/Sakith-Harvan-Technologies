@@ -3,7 +3,14 @@ import { Logo } from './Logo';
 import { Phone, Mail, MapPin, Calendar, ExternalLink, ShieldCheck, ArrowUp } from 'lucide-react';
 import { COMPANY_DETAILS } from '../data/defaultData';
 
-export const Footer = ({ setActiveTab, onOpenConsultation, onOpenRequirement, onOpenAdmin }) => {
+export const Footer = ({ 
+  setActiveTab, 
+  onOpenConsultation, 
+  onOpenRequirement, 
+  onOpenAdmin,
+  onOpenEmpLogin,
+  onOpenInternLogin
+}) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -125,12 +132,20 @@ export const Footer = ({ setActiveTab, onOpenConsultation, onOpenRequirement, on
             © {new Date().getFullYear()} <strong className="text-slate-200">Sakith Harvan Technologies</strong>. All rights reserved.
           </div>
 
-          <div className="flex items-center gap-4">
-            <button onClick={onOpenAdmin} className="hover:text-cyan-400 flex items-center gap-1">
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <button onClick={onOpenAdmin} className="hover:text-rose-400 font-semibold flex items-center gap-1 transition-colors">
               <span>Admin Portal</span>
             </button>
             <span>•</span>
-            <button onClick={() => onOpenRequirement({})} className="hover:text-cyan-400">
+            <button onClick={onOpenEmpLogin} className="hover:text-cyan-400 font-semibold transition-colors">
+              Employee Portal (Emp Login)
+            </button>
+            <span>•</span>
+            <button onClick={onOpenInternLogin} className="hover:text-amber-400 font-semibold transition-colors">
+              Intern Portal (Intern Login)
+            </button>
+            <span>•</span>
+            <button onClick={() => onOpenRequirement({})} className="hover:text-cyan-400 transition-colors">
               Submit Requirement
             </button>
             <span>•</span>
@@ -147,3 +162,4 @@ export const Footer = ({ setActiveTab, onOpenConsultation, onOpenRequirement, on
     </footer>
   );
 };
+

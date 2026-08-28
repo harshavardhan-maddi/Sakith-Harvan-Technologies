@@ -549,3 +549,118 @@ export const INITIAL_REGISTRATIONS = [
     createdAt: "2026-08-07"
   }
 ];
+
+export const INITIAL_TEAM_MEMBERS = [
+  {
+    id: "EMP-101",
+    name: "K. Ramesh Kumar",
+    role: "Senior Full Stack Engineer",
+    type: "Employee",
+    email: "ramesh.kumar@sakithharvan.com",
+    phone: "+91 9848022334",
+    joinedDate: "2026-07-15",
+    status: "Active"
+  },
+  {
+    id: "EMP-102",
+    name: "Ananya Sharma",
+    role: "Lead UI/UX & Frontend Architect",
+    type: "Employee",
+    email: "ananya.s@sakithharvan.com",
+    phone: "+91 9848033445",
+    joinedDate: "2026-07-20",
+    status: "Active"
+  },
+  {
+    id: "INT-201",
+    name: "V. Sai Teja",
+    role: "AI/ML Solutions Intern",
+    type: "Intern",
+    email: "saiteja.intern@sakithharvan.com",
+    phone: "+91 9100234567",
+    joinedDate: "2026-08-01",
+    status: "Active"
+  },
+  {
+    id: "INT-202",
+    name: "P. Meghana",
+    role: "Web & SaaS Development Intern",
+    type: "Intern",
+    email: "meghana.p@sakithharvan.com",
+    phone: "+91 9100345678",
+    joinedDate: "2026-08-05",
+    status: "Active"
+  }
+];
+
+export const INITIAL_ASSIGNED_TASKS = [
+  {
+    id: "TSK-5001",
+    memberId: "EMP-101",
+    memberName: "K. Ramesh Kumar",
+    memberRole: "Senior Full Stack Engineer",
+    memberType: "Employee",
+    title: "Campus ERP Fee Management Module & Payment Gateway Integration",
+    description: "Develop the complete fee payment microservice with Razorpay integration and instant receipt PDF generation for college ERP.",
+    assignedDate: "2026-08-15",
+    dueDate: "2026-08-30",
+    priority: "High",
+    status: "In Progress",
+    progress: 75,
+    completedWorkNotes: "Implemented database migrations, webhook handlers, and backend endpoints. Currently testing end-to-end receipt generation in staging.",
+    completedDate: "",
+    deliverableUrl: "https://github.com/sakith-harvan/erp-fee-service"
+  },
+  {
+    id: "TSK-5002",
+    memberId: "EMP-102",
+    memberName: "Ananya Sharma",
+    memberRole: "Lead UI/UX & Frontend Architect",
+    memberType: "Employee",
+    title: "SaaS Mobile App Responsive UI Audit & Dark Mode System",
+    description: "Refactor student attendance and timetable dashboards for ultra-smooth responsiveness and WCAG AA color accessibility.",
+    assignedDate: "2026-08-18",
+    dueDate: "2026-08-25",
+    priority: "Medium",
+    status: "Completed",
+    progress: 100,
+    completedWorkNotes: "Completed full Figma tokens conversion and React Tailwind theme switchers. Deployed to preview branch and passed review.",
+    completedDate: "2026-08-24",
+    deliverableUrl: "https://figma.com/file/sakith-harvan-design-system"
+  },
+  {
+    id: "TSK-5003",
+    memberId: "INT-201",
+    memberName: "V. Sai Teja",
+    memberRole: "AI/ML Solutions Intern",
+    memberType: "Intern",
+    title: "Agentic AI Workshop Lab Scripts & LLM Pipeline Notebooks",
+    description: "Prepare and verify Google Gemini API starter scripts and LangChain autonomous agent demonstrations for upcoming college workshops.",
+    assignedDate: "2026-08-20",
+    dueDate: "2026-09-02",
+    priority: "High",
+    status: "In Progress",
+    progress: 60,
+    completedWorkNotes: "Completed 3 out of 5 Jupyter notebooks with API key setup and memory tools. Working on RAG vector store notebook.",
+    completedDate: "",
+    deliverableUrl: "https://colab.research.google.com/sakith-harvan-ai-lab"
+  },
+  {
+    id: "TSK-5004",
+    memberId: "INT-202",
+    memberName: "P. Meghana",
+    memberRole: "Web & SaaS Development Intern",
+    memberType: "Intern",
+    title: "Client Requirement Inquiry Validation & Email Template Formatter",
+    description: "Build clean HTML email response templates for instant auto-acknowledgment when clients book consultations.",
+    assignedDate: "2026-08-22",
+    dueDate: "2026-08-29",
+    priority: "Medium",
+    status: "In Progress",
+    progress: 40,
+    completedWorkNotes: "Created 2 responsive templates in HTML/CSS with brand logo and typography. Testing email client compatibility across Outlook and Gmail.",
+    completedDate: "",
+    deliverableUrl: ""
+  }
+];
+
