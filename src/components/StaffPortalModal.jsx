@@ -616,7 +616,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
                         setMemberIdInput(e.target.value);
                         setAuthError('');
                       }}
-                      placeholder={roleMode === 'founder' ? 'e.g. CEO-01 or PIN 2526' : roleMode === 'intern' ? 'e.g. INT-201' : 'e.g. EMP-101'}
+                      placeholder="Enter ID or Access PIN"
                       className="form-input pl-10 uppercase font-mono tracking-wider text-sm font-semibold border-white/20 focus:border-cyan-400"
                       autoFocus
                     />

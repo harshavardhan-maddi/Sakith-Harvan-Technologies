@@ -468,7 +468,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     }
 
     // 4. Not recognized
-    setAuthError(`ID or PIN "${cleanId}" not recognized. Please check your assigned ID (e.g. EMP-101, INT-201, CEO-01, or Admin PIN).`);
+    setAuthError(`ID or PIN "${cleanId}" not recognized. Please check your assigned ID or Access PIN.`);
   };
 
   const handleLogout = () => {
@@ -913,7 +913,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                         setAuthInput(e.target.value);
                         setAuthError('');
                       }}
-                      placeholder="e.g. EMP-101, INT-201, CEO-01, FOUNDER-02, or 2526"
+                      placeholder="Enter ID or Access PIN"
                       className="form-input pl-10 uppercase font-mono text-center tracking-wider text-sm sm:text-base font-bold border-red-500/40 focus:border-cyan-400 bg-slate-950/80"
                       autoFocus
                     />
