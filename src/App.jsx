@@ -13,6 +13,7 @@ import { WorkshopBookingModal } from './components/WorkshopBookingModal';
 import { AdminPortalModal } from './components/AdminPortalModal';
 import { StaffPortalModal } from './components/StaffPortalModal';
 import { IntroSplash } from './components/IntroSplash';
+import { PWAInstallCard } from './components/PWAInstallCard';
 import { Footer } from './components/Footer';
 import { Sparkles, Calendar, X, CheckCircle2, PhoneCall, Layers, BookOpen, ArrowRight, ShieldCheck, Users } from 'lucide-react';
 
@@ -117,6 +118,9 @@ export default function App() {
           onOpenRequirement={handleOpenRequirement}
           onOpenConsultation={() => setIsConsultationModalOpen(true)}
         />
+
+        {/* PWA Progressive Web App Install Card */}
+        <PWAInstallCard />
 
         {/* =================================================================== */}
         {/* PRIMARY SPACE 1: ENTERPRISE SAAS & CUSTOM SOFTWARE SOLUTIONS SPACE  */}
