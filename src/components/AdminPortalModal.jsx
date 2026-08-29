@@ -87,8 +87,11 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     priority: 'High'
   });
 
-  // Filter for Team & Work tab in Admin
-  const [teamTabSubFilter, setTeamTabSubFilter] = useState('all'); // 'all', 'employees', 'interns', 'tasks'
+  // Filter & Search states for Team & Work tab in Admin
+  const [teamTabSubFilter, setTeamTabSubFilter] = useState('tasks'); // 'tasks', 'intern_tasks', 'emp_tasks', 'members'
+  const [adminTaskSearch, setAdminTaskSearch] = useState('');
+  const [adminTaskStatusFilter, setAdminTaskStatusFilter] = useState('All');
+  const [adminTaskMemberFilter, setAdminTaskMemberFilter] = useState('');
 
   // Search & Filter state for Leads
   const [searchQuery, setSearchQuery] = useState('');
@@ -850,6 +853,55 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
   const completedCount = memberTasks.filter((t) => t.status === 'Completed').length;
   const inProgressCount = memberTasks.filter((t) => t.status === 'In Progress' || t.status === 'Assigned').length;
 
+  // Helper to determine member type for staff tracking
+  const getStaffMemberType = (memberId) => {
+    const member = teamMembers.find(m => (m.id || '').toUpperCase() === (memberId || '').toUpperCase());
+    if (member) return member.type || 'Employee';
+    if ((memberId || '').toUpperCase().startsWith('INT')) return 'Intern';
+    return 'Employee';
+  };
+
+  // Filtered tasks for Admin Work Progress Center
+  const filteredAdminTasks = assignedTasks.filter((t) => {
+    const memType = getStaffMemberType(t.memberId);
+    
+    // Sub-tab filter
+    if (teamTabSubFilter === 'intern_tasks' && memType !== 'Intern') return false;
+    if (teamTabSubFilter === 'emp_tasks' && memType !== 'Employee') return false;
+    
+    // Specific member filter
+    if (adminTaskMemberFilter && (t.memberId || '').toUpperCase() !== adminTaskMemberFilter.toUpperCase()) {
+      return false;
+    }
+    
+    // Status filter
+    if (adminTaskStatusFilter !== 'All' && t.status !== adminTaskStatusFilter) {
+      return false;
+    }
+    
+    // Search query
+    if (adminTaskSearch) {
+      const q = adminTaskSearch.toLowerCase();
+      const matchTitle = (t.title || '').toLowerCase().includes(q);
+      const matchDesc = (t.description || '').toLowerCase().includes(q);
+      const matchMember = (t.memberName || '').toLowerCase().includes(q) || (t.memberId || '').toLowerCase().includes(q);
+      const matchNotes = (t.completedWorkNotes || '').toLowerCase().includes(q);
+      const matchDeliverable = (t.deliverableUrl || '').toLowerCase().includes(q);
+      const matchId = (t.id || '').toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchMember && !matchNotes && !matchDeliverable && !matchId) return false;
+    }
+    
+    return true;
+  });
+
+  const adminInternTasksCount = assignedTasks.filter(t => getStaffMemberType(t.memberId) === 'Intern').length;
+  const adminEmpTasksCount = assignedTasks.filter(t => getStaffMemberType(t.memberId) === 'Employee').length;
+  const adminInProgressTasksCount = assignedTasks.filter(t => t.status === 'In Progress' || t.status === 'Assigned').length;
+  const adminCompletedTasksCount = assignedTasks.filter(t => t.status === 'Completed').length;
+  const adminAvgProgressRate = assignedTasks.length > 0
+    ? Math.round(assignedTasks.reduce((acc, t) => acc + (Number(t.progress) || (t.status === 'Completed' ? 100 : 0)), 0) / assignedTasks.length)
+    : 0;
+
   if (!isOpen) return null;
 
   return (
@@ -1117,10 +1169,10 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                     >
                       <span className="flex items-center gap-3">
                         <Users className="w-4 h-4 text-cyan-400" />
-                        <span>Team &amp; Work Tasks</span>
+                        <span>Intern &amp; Emp Work Progress</span>
                       </span>
                       <span className="px-2 py-0.5 rounded-full bg-cyan-400 text-slate-950 text-[10px] font-bold">
-                        {teamMembers.length}
+                        {assignedTasks.length}
                       </span>
                     </button>
 
@@ -1175,7 +1227,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                     <option value="quotation_maker">Quotation Maker Engine</option>
                     <option value="consultations">Consultations ({consultations.length})</option>
                     <option value="requirements">Requirements ({requirements.length})</option>
-                    <option value="team_work">Team &amp; Work ({teamMembers.length})</option>
+                    <option value="team_work">Intern &amp; Emp Work Progress ({assignedTasks.length} Tasks)</option>
                     <option value="workshops">Workshops &amp; Tech ({workshops.length})</option>
                     <option value="settings">Security &amp; PIN</option>
                   </select>
@@ -1492,146 +1544,616 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                     </div>
                   )}
 
-                  {/* TAB: TEAM & WORK */}
+                  {/* TAB: INTERN & EMP WORK PROGRESS CENTER */}
                   {activeTab === 'team_work' && (
                     <div className="space-y-6 animate-in fade-in duration-300">
-                      <div className="flex items-center justify-between flex-wrap gap-4">
-                        <div className="flex items-center gap-2 bg-slate-900/90 p-1 rounded-xl border border-white/10">
-                          {[
-                            { id: 'all', label: `All Staff (${teamMembers.length})` },
-                            { id: 'employees', label: `Employees (${teamMembers.filter(m => m.type === 'Employee').length})` },
-                            { id: 'interns', label: `Interns (${teamMembers.filter(m => m.type === 'Intern').length})` },
-                            { id: 'tasks', label: `All Tasks (${assignedTasks.length})` }
-                          ].map((f) => (
+                      {/* Top Header Row & Work Progress Metrics */}
+                      <div className="space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div>
+                            <h3 className="text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5">
+                              <Users className="w-6 h-6 text-cyan-400" />
+                              <span>Intern &amp; Employee Work Progress Center</span>
+                            </h3>
+                            <p className="text-xs text-slate-300">
+                              Track real-time progress, review completed tasks, inspect submitted deliverables, and manage staff work assignments.
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap">
                             <button
-                              key={f.id}
-                              onClick={() => setTeamTabSubFilter(f.id)}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                teamTabSubFilter === f.id
-                                  ? 'bg-slate-800 text-cyan-400 shadow-md font-bold'
-                                  : 'text-slate-400 hover:text-white'
-                              }`}
+                              onClick={() => handleOpenAssignTask('')}
+                              className="btn-cyan text-xs py-2 px-3.5 flex items-center gap-1.5 font-bold shadow-lg shadow-cyan-600/20"
                             >
-                              {f.label}
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Assign Work</span>
                             </button>
-                          ))}
+                            <button
+                              onClick={() => handleOpenAddMember('Employee')}
+                              className="btn-primary text-xs py-2 px-3 flex items-center gap-1.5 font-bold"
+                            >
+                              <Briefcase className="w-3.5 h-3.5" />
+                              <span>Add Employee</span>
+                            </button>
+                            <button
+                              onClick={() => handleOpenAddMember('Intern')}
+                              className="px-3 py-2 rounded-xl bg-amber-950/80 hover:bg-amber-900 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                            >
+                              <GraduationCap className="w-3.5 h-3.5" />
+                              <span>Add Intern</span>
+                            </button>
+                          </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleOpenAddMember('Employee')}
-                            className="btn-primary text-xs py-2 px-3.5 flex items-center gap-1.5"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Add Employee</span>
-                          </button>
-                          <button
-                            onClick={() => handleOpenAddMember('Intern')}
-                            className="btn-secondary text-xs py-2 px-3.5 flex items-center gap-1.5 text-amber-400 border-amber-500/30"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Add Intern</span>
-                          </button>
-                          <button
-                            onClick={() => handleOpenAssignTask('')}
-                            className="btn-cyan text-xs py-2 px-3.5 flex items-center gap-1.5"
-                          >
-                            <CheckSquare className="w-3.5 h-3.5" />
-                            <span>Assign Task</span>
-                          </button>
+                        {/* 4 KPI Summary Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                          <div className="glass-card p-4 rounded-2xl border border-blue-500/30 bg-slate-900/90 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-400">
+                              <span>Total Company Tasks</span>
+                              <div className="p-1.5 rounded-lg bg-blue-950 text-blue-400 border border-blue-500/30">
+                                <CheckSquare className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <div className="text-2xl font-extrabold text-white">{assignedTasks.length}</div>
+                            <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                              <div className="bg-blue-500 h-full rounded-full" style={{ width: `${adminAvgProgressRate}%` }} />
+                            </div>
+                            <p className="text-[10px] text-slate-400">{adminAvgProgressRate}% Overall Completion Rate</p>
+                          </div>
+
+                          <div className="glass-card p-4 rounded-2xl border border-amber-500/30 bg-slate-900/90 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-400">
+                              <span>Intern Work Progress</span>
+                              <div className="p-1.5 rounded-lg bg-amber-950 text-amber-400 border border-amber-500/30">
+                                <GraduationCap className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <div className="text-2xl font-extrabold text-amber-300">{adminInternTasksCount} <span className="text-xs text-slate-400 font-normal">Tasks</span></div>
+                            <p className="text-[10px] text-amber-400/90 font-medium">
+                              {teamMembers.filter(m => m.type === 'Intern').length} Active Interns
+                            </p>
+                          </div>
+
+                          <div className="glass-card p-4 rounded-2xl border border-cyan-500/30 bg-slate-900/90 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-400">
+                              <span>Employee Work Progress</span>
+                              <div className="p-1.5 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-500/30">
+                                <Briefcase className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <div className="text-2xl font-extrabold text-cyan-300">{adminEmpTasksCount} <span className="text-xs text-slate-400 font-normal">Tasks</span></div>
+                            <p className="text-[10px] text-cyan-400/90 font-medium">
+                              {teamMembers.filter(m => m.type === 'Employee').length} Full-Time Engineers
+                            </p>
+                          </div>
+
+                          <div className="glass-card p-4 rounded-2xl border border-emerald-500/30 bg-slate-900/90 space-y-2">
+                            <div className="flex items-center justify-between text-xs text-slate-400">
+                              <span>Completed Deliverables</span>
+                              <div className="p-1.5 rounded-lg bg-emerald-950 text-emerald-400 border border-emerald-500/30">
+                                <CheckCircle2 className="w-4 h-4" />
+                              </div>
+                            </div>
+                            <div className="text-2xl font-extrabold text-emerald-400">{adminCompletedTasksCount} <span className="text-xs text-slate-400 font-normal">Done</span></div>
+                            <p className="text-[10px] text-emerald-300/80 font-medium">
+                              {adminInProgressTasksCount} active tasks in progress
+                            </p>
+                          </div>
                         </div>
                       </div>
 
-                      {teamTabSubFilter !== 'tasks' ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {teamMembers
-                            .filter(m => {
-                              if (teamTabSubFilter === 'employees') return m.type === 'Employee';
-                              if (teamTabSubFilter === 'interns') return m.type === 'Intern';
-                              return true;
-                            })
-                            .map((member) => (
-                              <div key={member.id} className="glass-card p-5 rounded-2xl border border-white/10 space-y-3">
-                                <div className="flex items-start justify-between">
-                                  <div>
-                                    <div className="font-bold text-white text-sm flex items-center gap-1.5">
-                                      {member.isExecutive && <Crown className="w-3.5 h-3.5 text-amber-300" />}
-                                      <span>{member.name}</span>
-                                    </div>
-                                    <div className="text-xs text-slate-400 font-mono">{member.id} • {member.type}</div>
-                                    <div className="text-xs text-cyan-400 font-semibold pt-1">{member.role}</div>
-                                  </div>
+                      {/* Sub-Tabs Selector */}
+                      <div className="flex items-center gap-2 border-b border-white/10 pb-3 flex-wrap">
+                        {[
+                          { id: 'tasks', label: `📋 All Tasks & Progress (${assignedTasks.length})` },
+                          { id: 'intern_tasks', label: `🎓 Intern Work Progress (${adminInternTasksCount})` },
+                          { id: 'emp_tasks', label: `💼 Employee Work Progress (${adminEmpTasksCount})` },
+                          { id: 'members', label: `👥 Staff Directory (${teamMembers.length})` }
+                        ].map((subTab) => (
+                          <button
+                            key={subTab.id}
+                            onClick={() => {
+                              setTeamTabSubFilter(subTab.id);
+                              setAdminTaskMemberFilter('');
+                            }}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                              teamTabSubFilter === subTab.id
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800'
+                            }`}
+                          >
+                            {subTab.label}
+                          </button>
+                        ))}
+                      </div>
 
-                                  {!member.isExecutive && (
-                                    <button
-                                      onClick={() => handleDeleteMember(member.id)}
-                                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800"
-                                      title="Remove Member"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  )}
-                                </div>
-
-                                <div className="pt-2 border-t border-white/10 flex items-center justify-between text-xs">
-                                  <button
-                                    onClick={() => handleOpenAssignTask(member.id)}
-                                    className="text-cyan-400 hover:underline flex items-center gap-1 font-semibold"
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                    <span>Assign Work</span>
-                                  </button>
-                                  <span className="text-slate-400 font-mono">
-                                    {assignedTasks.filter(t => (t.memberId || '').toUpperCase() === member.id.toUpperCase()).length} Tasks
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {assignedTasks.map((t) => (
-                            <div key={t.id} className="glass-card p-5 rounded-2xl border border-white/10 space-y-3">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
-                                <div>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-bold text-white text-base">{t.title}</h4>
-                                    <span className="text-xs font-mono text-cyan-400 bg-slate-900 px-2 py-0.5 rounded border border-white/10">
-                                      {t.id}
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-slate-400">Assigned to: <strong className="text-white">{t.memberName || t.memberId}</strong> ({t.memberId})</div>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                  <select
-                                    value={t.status || 'In Progress'}
-                                    onChange={(e) => handleFounderUpdateTaskStatus(t.id, e.target.value)}
-                                    className="form-input text-xs py-1 px-2.5 bg-slate-900 text-cyan-400 border-white/20"
-                                  >
-                                    <option value="Assigned">Assigned</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Completed">Completed</option>
-                                  </select>
-
-                                  <button
-                                    onClick={() => handleDeleteTask(t.id)}
-                                    className="p-1.5 rounded-lg bg-red-950/60 text-red-400 hover:text-white"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-
-                              <p className="text-xs text-slate-300">{t.description}</p>
-
-                              {t.deliverableUrl && (
-                                <div className="text-xs text-cyan-400">
-                                  <strong>Deliverable:</strong> <a href={t.deliverableUrl} target="_blank" rel="noreferrer" className="underline">{t.deliverableUrl}</a>
-                                </div>
+                      {/* Search, Member Select & Status Filter Controls (for task views) */}
+                      {teamTabSubFilter !== 'members' && (
+                        <div className="glass-card p-4 rounded-2xl border border-white/10 space-y-3 bg-slate-900/60">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                            {/* Search */}
+                            <div className="sm:col-span-2 lg:col-span-2 relative">
+                              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                              <input
+                                type="text"
+                                value={adminTaskSearch}
+                                onChange={(e) => setAdminTaskSearch(e.target.value)}
+                                placeholder="Search by task title, member name, ID, or deliverable..."
+                                className="form-input pl-10 text-xs"
+                              />
+                              {adminTaskSearch && (
+                                <button
+                                  onClick={() => setAdminTaskSearch('')}
+                                  className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
                               )}
                             </div>
-                          ))}
+
+                            {/* Status Filter */}
+                            <div>
+                              <select
+                                value={adminTaskStatusFilter}
+                                onChange={(e) => setAdminTaskStatusFilter(e.target.value)}
+                                className="form-input text-xs"
+                              >
+                                <option value="All">All Statuses</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Assigned">Assigned</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                            </div>
+
+                            {/* Member Filter Dropdown */}
+                            <div>
+                              <select
+                                value={adminTaskMemberFilter}
+                                onChange={(e) => setAdminTaskMemberFilter(e.target.value)}
+                                className="form-input text-xs"
+                              >
+                                <option value="">Filter by Staff Member (All)</option>
+                                {teamMembers.map((m) => (
+                                  <option key={m.id} value={m.id}>
+                                    {m.name} ({m.id} - {m.type})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* CONTENT 1: TASK LIST WITH DETAILED WORK PROGRESS & DELIVERABLES */}
+                      {teamTabSubFilter !== 'members' ? (
+                        <div className="space-y-4">
+                          {filteredAdminTasks.length === 0 ? (
+                            <div className="glass-card p-12 text-center text-slate-400 space-y-3 rounded-2xl border border-white/10">
+                              <CheckCircle2 className="w-12 h-12 text-slate-500 mx-auto" />
+                              <div className="font-bold text-white text-base">No Matching Tasks Found</div>
+                              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                                No tasks match the current search or status filter. Try clearing filters or assign a new task.
+                              </p>
+                              <button
+                                onClick={() => {
+                                  setAdminTaskSearch('');
+                                  setAdminTaskStatusFilter('All');
+                                  setAdminTaskMemberFilter('');
+                                }}
+                                className="btn-secondary py-2 px-4 text-xs mx-auto"
+                              >
+                                Clear All Filters
+                              </button>
+                            </div>
+                          ) : (
+                            filteredAdminTasks.map((t) => {
+                              const memType = getStaffMemberType(t.memberId);
+                              const progressVal = Number(t.progress) || (t.status === 'Completed' ? 100 : t.status === 'In Progress' ? 50 : 0);
+                              const isEditingThis = editingTaskId === t.id;
+
+                              return (
+                                <div
+                                  key={t.id}
+                                  className={`glass-card p-5 sm:p-6 rounded-2xl border transition-all space-y-4 ${
+                                    t.status === 'Completed'
+                                      ? 'border-emerald-500/40 bg-slate-900/90'
+                                      : t.status === 'In Progress'
+                                      ? 'border-cyan-500/30 bg-slate-900/80 glow-blue'
+                                      : 'border-white/10 bg-slate-900/60'
+                                  }`}
+                                >
+                                  {/* Top Header Line */}
+                                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-white/10 pb-3.5">
+                                    <div className="space-y-1.5">
+                                      <div className="flex items-center gap-2.5 flex-wrap">
+                                        <h4 className="font-extrabold text-white text-base sm:text-lg tracking-tight">
+                                          {t.title}
+                                        </h4>
+                                        <span className="text-xs font-mono text-cyan-400 bg-slate-950 px-2.5 py-0.5 rounded-full border border-white/10 font-bold">
+                                          {t.id}
+                                        </span>
+                                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                          t.priority === 'High'
+                                            ? 'bg-rose-950 text-rose-300 border border-rose-500/40'
+                                            : t.priority === 'Medium'
+                                            ? 'bg-amber-950 text-amber-300 border border-amber-500/40'
+                                            : 'bg-slate-800 text-slate-300 border border-white/10'
+                                        }`}>
+                                          {t.priority || 'High'} Priority
+                                        </span>
+                                      </div>
+
+                                      {/* Assignee Badge */}
+                                      <div className="flex items-center gap-2 text-xs flex-wrap">
+                                        <span className="text-slate-400">Assigned to:</span>
+                                        <span className="inline-flex items-center gap-1.5 font-bold text-white bg-slate-800/90 px-2.5 py-1 rounded-lg border border-white/10">
+                                          {memType === 'Intern' ? (
+                                            <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
+                                          ) : (
+                                            <Briefcase className="w-3.5 h-3.5 text-cyan-400" />
+                                          )}
+                                          <span>{t.memberName || t.memberId}</span>
+                                          <span className="text-[10px] font-mono text-slate-400">({t.memberId})</span>
+                                        </span>
+
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                          memType === 'Intern'
+                                            ? 'bg-amber-950 text-amber-300 border border-amber-500/30'
+                                            : 'bg-cyan-950 text-cyan-300 border border-cyan-500/30'
+                                        }`}>
+                                          {memType}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Status Controls & Actions */}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <select
+                                        value={t.status || 'In Progress'}
+                                        onChange={(e) => handleFounderUpdateTaskStatus(t.id, e.target.value)}
+                                        className={`form-input text-xs py-1.5 px-3 font-bold rounded-xl border ${
+                                          t.status === 'Completed'
+                                            ? 'bg-emerald-950 text-emerald-300 border-emerald-500/40'
+                                            : t.status === 'In Progress'
+                                            ? 'bg-cyan-950 text-cyan-300 border-cyan-500/40'
+                                            : 'bg-blue-950 text-blue-300 border-blue-500/40'
+                                        }`}
+                                      >
+                                        <option value="Assigned">Assigned</option>
+                                        <option value="In Progress">In Progress</option>
+                                        <option value="Completed">Completed</option>
+                                      </select>
+
+                                      <button
+                                        onClick={() => isEditingThis ? setEditingTaskId(null) : handleStartUpdate(t)}
+                                        className="p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-cyan-400 hover:bg-slate-700 transition-colors border border-white/10 text-xs font-semibold flex items-center gap-1"
+                                        title="Review / Edit Work Progress"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">{isEditingThis ? 'Close Review' : 'Review Work'}</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleDeleteTask(t.id)}
+                                        className="p-2 rounded-xl bg-red-950/60 text-red-400 hover:text-white hover:bg-red-900/80 transition-colors border border-red-500/30"
+                                        title="Delete Task"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* LIVE WORK PROGRESS BAR */}
+                                  <div className="space-y-1.5 p-3.5 rounded-xl bg-slate-950/70 border border-white/10">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-slate-300">Live Progress:</span>
+                                        <span className={`font-mono font-extrabold ${
+                                          progressVal === 100
+                                            ? 'text-emerald-400'
+                                            : progressVal > 50
+                                            ? 'text-cyan-300'
+                                            : 'text-amber-300'
+                                        }`}>
+                                          {progressVal}%
+                                        </span>
+                                      </div>
+
+                                      <div className="flex items-center gap-2">
+                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                          t.status === 'Completed'
+                                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                            : t.status === 'In Progress'
+                                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                                            : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                        }`}>
+                                          <span className="w-1.5 h-1.5 rounded-full bg-current animate-ping" />
+                                          <span>{t.status || 'In Progress'}</span>
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Progress Track */}
+                                    <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-white/10">
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-500 ${
+                                          progressVal === 100
+                                            ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                                            : progressVal >= 50
+                                            ? 'bg-gradient-to-r from-cyan-500 to-blue-500'
+                                            : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                                        }`}
+                                        style={{ width: `${progressVal}%` }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {/* Task Description & Dates */}
+                                  <div className="space-y-2">
+                                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                                      {t.description}
+                                    </p>
+
+                                    <div className="flex items-center gap-4 text-xs text-slate-400 flex-wrap pt-1">
+                                      <div className="flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                                        <span>Assigned: <strong className="text-slate-300">{t.assignedDate || 'N/A'}</strong></span>
+                                      </div>
+
+                                      {t.dueDate && (
+                                        <div className="flex items-center gap-1.5">
+                                          <Clock className="w-3.5 h-3.5 text-amber-400" />
+                                          <span>Due Date: <strong className="text-slate-300">{t.dueDate}</strong></span>
+                                        </div>
+                                      )}
+
+                                      {t.completedDate && (
+                                        <div className="flex items-center gap-1.5">
+                                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                                          <span>Completed on: <strong className="text-emerald-300">{t.completedDate}</strong></span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* STAFF WORK NOTES & DELIVERABLES */}
+                                  {(t.completedWorkNotes || t.deliverableUrl) && (
+                                    <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/20 space-y-2.5">
+                                      {t.completedWorkNotes && (
+                                        <div className="space-y-1 text-xs">
+                                          <div className="font-bold text-cyan-300 flex items-center gap-1.5">
+                                            <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                                            <span>Staff Submitted Work Notes:</span>
+                                          </div>
+                                          <p className="text-slate-300 bg-slate-900/90 p-3 rounded-lg border border-white/5 whitespace-pre-wrap leading-relaxed">
+                                            {t.completedWorkNotes}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      {t.deliverableUrl && (
+                                        <div className="flex items-center justify-between flex-wrap gap-2 pt-1 border-t border-white/5">
+                                          <div className="text-xs text-slate-300 font-bold flex items-center gap-1.5">
+                                            <LinkIcon className="w-3.5 h-3.5 text-rose-400" />
+                                            <span>Deliverable Link:</span>
+                                          </div>
+                                          <a
+                                            href={t.deliverableUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="btn-cyan py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 glow-blue shadow-md"
+                                          >
+                                            <span>Open Deliverable</span>
+                                            <ExternalLink className="w-3.5 h-3.5" />
+                                          </a>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  {/* INLINE ADMIN WORK REVIEW & UPDATE DRAWER */}
+                                  {isEditingThis && (
+                                    <div className="p-5 rounded-2xl bg-slate-950 border border-cyan-500/40 space-y-4 animate-in slide-in-from-top-4 duration-200">
+                                      <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
+                                        <div className="font-bold text-white text-xs sm:text-sm flex items-center gap-2">
+                                          <Edit3 className="w-4 h-4 text-cyan-400" />
+                                          <span>Executive Admin Review &amp; Progress Override for {t.id}</span>
+                                        </div>
+                                        <button
+                                          onClick={() => setEditingTaskId(null)}
+                                          className="text-slate-400 hover:text-white"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                                        <div>
+                                          <label className="block font-semibold text-slate-300 mb-1">Status</label>
+                                          <select
+                                            value={workUpdateForm.status}
+                                            onChange={(e) => {
+                                              const newSt = e.target.value;
+                                              setWorkUpdateForm({
+                                                ...workUpdateForm,
+                                                status: newSt,
+                                                progress: newSt === 'Completed' ? 100 : workUpdateForm.progress
+                                              });
+                                            }}
+                                            className="form-input text-xs"
+                                          >
+                                            <option value="Assigned">Assigned</option>
+                                            <option value="In Progress">In Progress</option>
+                                            <option value="Completed">Completed</option>
+                                          </select>
+                                        </div>
+
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <label className="font-semibold text-slate-300">Progress Percentage</label>
+                                            <span className="font-mono font-bold text-cyan-400">{workUpdateForm.progress}%</span>
+                                          </div>
+                                          <input
+                                            type="range"
+                                            min="0"
+                                            max="100"
+                                            step="5"
+                                            value={workUpdateForm.progress}
+                                            onChange={(e) => setWorkUpdateForm({
+                                              ...workUpdateForm,
+                                              progress: Number(e.target.value),
+                                              status: Number(e.target.value) === 100 ? 'Completed' : 'In Progress'
+                                            })}
+                                            className="w-full accent-cyan-400 cursor-pointer"
+                                          />
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                          <label className="block font-semibold text-slate-300 mb-1">
+                                            Deliverable URL (GitHub / Google Drive / Figma / Live Demo)
+                                          </label>
+                                          <input
+                                            type="url"
+                                            value={workUpdateForm.deliverableUrl}
+                                            onChange={(e) => setWorkUpdateForm({ ...workUpdateForm, deliverableUrl: e.target.value })}
+                                            placeholder="https://github.com/..."
+                                            className="form-input text-xs"
+                                          />
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                          <label className="block font-semibold text-slate-300 mb-1">
+                                            Completed Work Notes &amp; Summary
+                                          </label>
+                                          <textarea
+                                            rows="3"
+                                            value={workUpdateForm.completedWorkNotes}
+                                            onChange={(e) => setWorkUpdateForm({ ...workUpdateForm, completedWorkNotes: e.target.value })}
+                                            placeholder="Add review notes, deliverables checklist, or verification comments..."
+                                            className="form-input text-xs"
+                                          />
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingTaskId(null)}
+                                          className="btn-secondary py-2 px-3.5 text-xs"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleSaveWorkUpdate(t.id)}
+                                          className="btn-primary py-2 px-4 text-xs font-bold flex items-center gap-1.5"
+                                        >
+                                          <Check className="w-3.5 h-3.5" />
+                                          <span>Save &amp; Sync Review</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      ) : (
+                        /* CONTENT 2: STAFF WORKLOAD DIRECTORY */
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {teamMembers.map((member) => {
+                            const memTasks = assignedTasks.filter(
+                              (t) => (t.memberId || '').toUpperCase() === member.id.toUpperCase()
+                            );
+                            const memCompleted = memTasks.filter((t) => t.status === 'Completed').length;
+                            const memInProgress = memTasks.filter((t) => t.status === 'In Progress' || t.status === 'Assigned').length;
+                            const memAvgProg = memTasks.length > 0
+                              ? Math.round(memTasks.reduce((acc, t) => acc + (Number(t.progress) || (t.status === 'Completed' ? 100 : 0)), 0) / memTasks.length)
+                              : 0;
+
+                            return (
+                              <div key={member.id} className="glass-card p-5 rounded-2xl border border-white/10 space-y-4 flex flex-col justify-between">
+                                <div className="space-y-3">
+                                  <div className="flex items-start justify-between">
+                                    <div className="space-y-1">
+                                      <div className="font-bold text-white text-base flex items-center gap-1.5">
+                                        {member.isExecutive ? (
+                                          <Crown className="w-4 h-4 text-amber-300" />
+                                        ) : member.type === 'Intern' ? (
+                                          <GraduationCap className="w-4 h-4 text-amber-400" />
+                                        ) : (
+                                          <Briefcase className="w-4 h-4 text-cyan-400" />
+                                        )}
+                                        <span>{member.name}</span>
+                                      </div>
+                                      <div className="text-xs text-slate-400 font-mono flex items-center gap-2">
+                                        <span>{member.id}</span>
+                                        <span>•</span>
+                                        <span className={`font-bold ${
+                                          member.type === 'Intern' ? 'text-amber-400' : 'text-cyan-400'
+                                        }`}>
+                                          {member.type}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-slate-300 font-medium">{member.role}</div>
+                                    </div>
+
+                                    {!member.isExecutive && (
+                                      <button
+                                        onClick={() => handleDeleteMember(member.id)}
+                                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800"
+                                        title="Remove Member"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {/* Workload Stats Card */}
+                                  <div className="p-3 rounded-xl bg-slate-950/80 border border-white/10 space-y-2 text-xs">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-slate-400">Workload &amp; Progress:</span>
+                                      <span className="font-mono font-bold text-cyan-300">{memAvgProg}% Avg</span>
+                                    </div>
+                                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          memAvgProg === 100 ? 'bg-emerald-400' : memAvgProg >= 50 ? 'bg-cyan-400' : 'bg-amber-400'
+                                        }`}
+                                        style={{ width: `${memAvgProg}%` }}
+                                      />
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
+                                      <span><strong>{memTasks.length}</strong> Total Tasks</span>
+                                      <span><strong className="text-emerald-400">{memCompleted}</strong> Done</span>
+                                      <span><strong className="text-amber-400">{memInProgress}</strong> Active</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs gap-2">
+                                  <button
+                                    onClick={() => handleOpenAssignTask(member.id)}
+                                    className="btn-cyan py-1.5 px-3 text-xs flex items-center gap-1 font-bold"
+                                  >
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Assign Work</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setTeamTabSubFilter('tasks');
+                                      setAdminTaskMemberFilter(member.id);
+                                    }}
+                                    className="text-xs text-blue-400 hover:text-cyan-300 font-semibold underline"
+                                  >
+                                    View Tasks ({memTasks.length}) &rarr;
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>

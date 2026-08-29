@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, FileText, Download, Trash2, Eye, X, CheckCircle2, Building, User, 
+import {
+  Plus, FileText, Download, Trash2, Eye, X, CheckCircle2, Building, User,
   DollarSign, Calculator, Layers, Sparkles, BookOpen, Monitor, ShieldCheck, Printer, ArrowRight, Tag, FileCheck
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
-import { 
-  saveQuotationToSupabase, 
-  deleteQuotationFromSupabase, 
-  fetchQuotationsFromSupabase 
+import {
+  saveQuotationToSupabase,
+  deleteQuotationFromSupabase,
+  fetchQuotationsFromSupabase
 } from '../lib/supabaseClient';
 
 export const SOFTWARE_TYPES = [
   { id: 'erp', name: 'ERP System', defaultPricePerLogin: 85, isErp: true, note: 'Default ₹85/- per login (Customizable)' },
   { id: 'saas', name: 'SaaS Platform', defaultPrice: 25000 },
-  { id: 'exam_portal', name: 'Exam Portal', defaultPrice: 15000 },
+  { id: 'exam_portal', name: 'Exam Portal', defaultPrice: 5000 },
   { id: 'college_website', name: 'College or School Website', defaultPrice: 8000, isFixed8k: true, note: 'Fixed ₹8,000/-' },
   { id: 'hospital_website', name: 'Medical or Hospital Website', defaultPrice: 12000 },
   { id: 'ecommerce', name: 'E-Commerce Website / App', defaultPrice: 18000 },
-  { id: 'ai_bot', name: 'AI Bot', defaultPrice: 20000 },
+  { id: 'ai_bot', name: 'AI Bot', defaultPrice: 9000 },
   { id: 'ai_agent', name: 'AI Agent', isAiAgent: true, note: 'Admin inputs price' },
   { id: 'kirana_app', name: 'Kirana and General Store App', defaultPrice: 10000 },
   { id: 'others', name: 'Others', isOthers: true, note: 'Specify custom app type' }
@@ -76,7 +76,7 @@ export const QuotationMaker = () => {
     // Financials & Discount Module
     basePrice: '8500',
     cloudHostingFee: '0',
-    
+
     // Discount Question State
     applyDiscount: 'No',
     discountAmount: '0',
@@ -237,11 +237,11 @@ export const QuotationMaker = () => {
   const handleGenerateQuotation = (e) => {
     e.preventDefault();
     const generatedId = 'SHT-QT-' + new Date().getFullYear() + '-' + Math.floor(1000 + Math.random() * 9000);
-    
+
     const finalProjectTypeName = domain === 'Software'
-      ? (formData.projectType === 'others' 
-          ? (formData.customAppType || 'Custom Software')
-          : (SOFTWARE_TYPES.find(t => t.id === formData.projectType)?.name || 'Custom Software'))
+      ? (formData.projectType === 'others'
+        ? (formData.customAppType || 'Custom Software')
+        : (SOFTWARE_TYPES.find(t => t.id === formData.projectType)?.name || 'Custom Software'))
       : `Technology Workshop: ${formData.workshopTopic || 'Campus Bootcamp'}`;
 
     const totalCalculated = calculateFinalTotal(formData);
@@ -701,7 +701,7 @@ export const QuotationMaker = () => {
                 {/* CLIENT DETAILS */}
                 <div className="space-y-3 p-4 rounded-xl bg-slate-900/90 border border-white/10">
                   <h5 className="font-bold text-white text-xs uppercase tracking-wider text-slate-300">Client Information</h5>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block font-semibold text-slate-300 mb-1">Client Contact Person Name *</label>
@@ -1206,8 +1206,8 @@ export const QuotationMaker = () => {
                     </h2>
                     <p className="text-xs font-semibold text-rose-600 italic">"Innovate. Integrate. Elevate."</p>
                     <p className="text-[11px] text-slate-500 mt-1">
-                      Contact: +91 7981847745 | +91 9014340739<br/>
-                      Email: mharshavardhan048@gmail.com | saikrishnathoka2526@gmail.com<br/>
+                      Contact: +91 7981847745 | +91 9014340739<br />
+                      Email: mharshavardhan048@gmail.com | saikrishnathoka2526@gmail.com<br />
                       Web: https://sakithharvan.com/
                     </p>
                   </div>
@@ -1251,15 +1251,15 @@ export const QuotationMaker = () => {
                         <td className="p-3 text-[11px] text-slate-600">
                           {selectedPreview.domain === 'Software' ? (
                             <>
-                              • Approx. Screens: {selectedPreview.approxScreens || 'N/A'}<br/>
-                              • Logins Enabled: {selectedPreview.hasLogins === 'Yes' ? `${selectedPreview.loginsCount} Users (${selectedPreview.rawProjectType === 'erp' || selectedPreview.projectType.includes('ERP') ? `Rate: ₹${selectedPreview.erpRatePerLogin || '85'}/login` : 'Standard'})` : 'No Logins Needed'}<br/>
-                              • Delivery Timeline: {selectedPreview.deliveryTimeline || '3-4 Weeks'}<br/>
-                              • Included Revisions: {selectedPreview.revisionsCount || '3 Revisions'}<br/>
+                              • Approx. Screens: {selectedPreview.approxScreens || 'N/A'}<br />
+                              • Logins Enabled: {selectedPreview.hasLogins === 'Yes' ? `${selectedPreview.loginsCount} Users (${selectedPreview.rawProjectType === 'erp' || selectedPreview.projectType.includes('ERP') ? `Rate: ₹${selectedPreview.erpRatePerLogin || '85'}/login` : 'Standard'})` : 'No Logins Needed'}<br />
+                              • Delivery Timeline: {selectedPreview.deliveryTimeline || '3-4 Weeks'}<br />
+                              • Included Revisions: {selectedPreview.revisionsCount || '3 Revisions'}<br />
                               • Support Period: {selectedPreview.supportPeriod || '1 Year Support'}
                             </>
                           ) : (
                             <>
-                              • Attendees: {selectedPreview.workshopCandidates} Candidates<br/>
+                              • Attendees: {selectedPreview.workshopCandidates} Candidates<br />
                               • Duration: {selectedPreview.workshopDays} Days
                             </>
                           )}
