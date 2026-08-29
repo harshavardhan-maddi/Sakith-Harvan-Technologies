@@ -471,11 +471,6 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     setAuthError(`ID or PIN "${cleanId}" not recognized. Please check your assigned ID (e.g. EMP-101, INT-201, CEO-01, or Admin PIN).`);
   };
 
-  const handleQuickSelect = (id) => {
-    setAuthInput(id);
-    handleLogin(null, id);
-  };
-
   const handleLogout = () => {
     setIsAuthenticated(false);
     setAuthenticatedRole(null);
@@ -940,110 +935,9 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                 </button>
               </form>
 
-              {/* QUICK 1-CLICK TEST / SELECT BADGES */}
-              <div className="pt-4 border-t border-white/10 space-y-3 text-left">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    Quick 1-Click Role Login Test:
-                  </span>
-                  <span className="text-[10px] text-cyan-400 font-mono">Auto Fills &amp; Logs In</span>
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  {/* Executive Admin */}
-                  <div className="space-y-1">
-                    <div className="text-[10px] font-semibold text-rose-400 uppercase tracking-wider flex items-center gap-1">
-                      <Shield className="w-3 h-3" />
-                      <span>Executive Admin &amp; Lead Management:</span>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickSelect('2526')}
-                        className="px-2.5 py-1.5 rounded-lg bg-red-950/80 border border-red-500/40 hover:border-red-400 text-[11px] font-bold text-rose-300 flex items-center gap-1.5 transition-all shadow-sm"
-                      >
-                        <Lock className="w-3 h-3 text-amber-300" />
-                        <span>PIN: 2526</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleQuickSelect('ADMIN')}
-                        className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-red-500/30 hover:border-red-400 text-[11px] font-bold text-slate-300 hover:text-white transition-all"
-                      >
-                        ADMIN
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Founders & Leadership */}
-                  <div className="space-y-1 pt-1">
-                    <div className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                      <Crown className="w-3 h-3 text-amber-300" />
-                      <span>Leadership &amp; Founders:</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickSelect('CEO-01')}
-                        className="p-2 rounded-xl bg-slate-900/90 border border-red-500/30 hover:border-amber-400 text-left transition-all flex items-center justify-between"
-                      >
-                        <div className="truncate">
-                          <div className="text-xs font-bold text-white flex items-center gap-1">
-                            <Crown className="w-3 h-3 text-amber-300 shrink-0" />
-                            <span>Maddi Harshavardhan</span>
-                          </div>
-                          <div className="text-[10px] text-rose-400 font-mono">CEO-01 • Co-Founder &amp; CEO</div>
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => handleQuickSelect('FOUNDER-02')}
-                        className="p-2 rounded-xl bg-slate-900/90 border border-red-500/30 hover:border-amber-400 text-left transition-all flex items-center justify-between"
-                      >
-                        <div className="truncate">
-                          <div className="text-xs font-bold text-white flex items-center gap-1">
-                            <Crown className="w-3 h-3 text-amber-300 shrink-0" />
-                            <span>Thoka Sai Krishna</span>
-                          </div>
-                          <div className="text-[10px] text-rose-400 font-mono">FOUNDER-02 • Co-Founder</div>
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Employees & Interns */}
-                  <div className="space-y-1 pt-1">
-                    <div className="text-[10px] font-semibold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      <span>Employees &amp; Interns:</span>
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {teamMembers.filter(m => !m.isExecutive).slice(0, 4).map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => handleQuickSelect(m.id)}
-                          className={`p-2 rounded-xl bg-slate-900/90 border text-left transition-all truncate ${
-                            m.type === 'Intern'
-                              ? 'border-amber-500/30 hover:border-amber-400 text-amber-300'
-                              : 'border-blue-500/30 hover:border-cyan-400 text-cyan-300'
-                          }`}
-                        >
-                          <div className="text-xs font-bold truncate text-white">{m.name}</div>
-                          <div className="text-[10px] font-mono opacity-80 truncate">{m.id} ({m.type})</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               <div className="pt-2 border-t border-white/10 flex items-center justify-center gap-2 text-[11px] text-slate-400">
                 <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Protected Enterprise System • Active Audit Logging</span>
+                <span>Protected Enterprise System • Automatic Role Identification • Active Audit Logging</span>
               </div>
             </div>
           </div>
