@@ -28,18 +28,15 @@ export default function App() {
   const [staffPortalRole, setStaffPortalRole] = useState('employee'); // 'employee' or 'intern'
 
   const handleOpenEmpLogin = () => {
-    setStaffPortalRole('employee');
-    setIsStaffPortalOpen(true);
+    setIsAdminPortalOpen(true);
   };
 
   const handleOpenInternLogin = () => {
-    setStaffPortalRole('intern');
-    setIsStaffPortalOpen(true);
+    setIsAdminPortalOpen(true);
   };
 
   const handleOpenFounderLogin = () => {
-    setStaffPortalRole('founder');
-    setIsStaffPortalOpen(true);
+    setIsAdminPortalOpen(true);
   };
 
   // Website Color Theme Toggle State (Red Present <-> Blue Cyber)

@@ -141,11 +141,11 @@ export const Navbar = ({
             <span>Consultation</span>
           </button>
 
-          {/* Admin Lock Button */}
+          {/* Admin Lock Button (Unified Single-Input Access Portal) */}
           <button
             onClick={onOpenAdmin}
-            title="Executive Admin Portal"
-            className="p-2 rounded-lg bg-slate-800/80 text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition-colors border border-white/10"
+            title="Unified Access Portal (Admin, Leadership, Employees & Interns)"
+            className="p-2 rounded-lg bg-slate-800/80 text-slate-400 hover:text-rose-400 hover:bg-slate-700 transition-colors border border-white/10 shadow-sm"
           >
             <Shield className="w-4 h-4" />
           </button>
