@@ -96,9 +96,6 @@ export default function App() {
         onOpenConsultation={() => setIsConsultationModalOpen(true)}
         onOpenRequirement={() => handleOpenRequirement({})}
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
-        onOpenFounderLogin={handleOpenFounderLogin}
-        onOpenEmpLogin={handleOpenEmpLogin}
-        onOpenInternLogin={handleOpenInternLogin}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -368,8 +365,6 @@ export default function App() {
         onOpenConsultation={() => setIsConsultationModalOpen(true)}
         onOpenRequirement={handleOpenRequirement}
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
-        onOpenEmpLogin={handleOpenEmpLogin}
-        onOpenInternLogin={handleOpenInternLogin}
       />
     </div>
   );

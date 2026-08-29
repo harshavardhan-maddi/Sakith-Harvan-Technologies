@@ -1,16 +1,13 @@
 import React from 'react';
 import { Logo } from './Logo';
-import { Phone, Mail, MapPin, Calendar, ExternalLink, ShieldCheck, ArrowUp } from 'lucide-react';
+import { Phone, Mail, MapPin, Calendar, ExternalLink, ShieldCheck, ArrowUp, Shield } from 'lucide-react';
 import { COMPANY_DETAILS } from '../data/defaultData';
 
 export const Footer = ({ 
   setActiveTab, 
   onOpenConsultation, 
   onOpenRequirement, 
-  onOpenAdmin,
-  onOpenFounderLogin,
-  onOpenEmpLogin,
-  onOpenInternLogin
+  onOpenAdmin 
 }) => {
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -134,20 +131,9 @@ export const Footer = ({
           </div>
 
           <div className="flex items-center gap-3 flex-wrap justify-center">
-            <button onClick={onOpenFounderLogin} className="hover:text-rose-400 font-bold text-rose-300 flex items-center gap-1 transition-colors">
-              <span>Founder &amp; CEO Portal</span>
-            </button>
-            <span>•</span>
-            <button onClick={onOpenEmpLogin} className="hover:text-cyan-400 font-semibold transition-colors">
-              Employee Portal
-            </button>
-            <span>•</span>
-            <button onClick={onOpenInternLogin} className="hover:text-amber-400 font-semibold transition-colors">
-              Intern Portal
-            </button>
-            <span>•</span>
-            <button onClick={onOpenAdmin} className="hover:text-rose-400 font-semibold flex items-center gap-1 transition-colors">
-              <span>Admin Leads</span>
+            <button onClick={onOpenAdmin} className="hover:text-rose-400 font-semibold flex items-center gap-1 transition-colors text-slate-300">
+              <Shield className="w-3.5 h-3.5 text-rose-400" />
+              <span>Unified Access Portal</span>
             </button>
             <span>•</span>
             <button onClick={() => onOpenRequirement({})} className="hover:text-cyan-400 transition-colors">
@@ -167,5 +153,3 @@ export const Footer = ({
     </footer>
   );
 };
-
-
