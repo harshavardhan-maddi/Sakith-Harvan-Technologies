@@ -310,3 +310,110 @@ export const deleteTaskFromSupabase = async (id) => {
   }
 };
 
+export const updateTeamMemberInSupabase = async (id, updateFields) => {
+  try {
+    const { error } = await supabase
+      .from('team_members')
+      .update(updateFields)
+      .eq('id', id);
+    if (error) console.warn('Supabase update team member warning:', error.message);
+  } catch (err) {
+    console.warn('Supabase connection error:', err);
+  }
+};
+
+/* =================================================================== */
+/* SUPABASE BATCHES HELPERS (Intern Cohorts & Batches)                */
+/* =================================================================== */
+export const saveBatchToSupabase = async (batchObject) => {
+  try {
+    const { data, error } = await supabase
+      .from('intern_batches')
+      .upsert([batchObject], { onConflict: 'id' });
+    if (error) console.warn('Supabase intern_batches upsert warning:', error.message);
+    else console.log('Successfully synced batch to Supabase:', data);
+  } catch (err) {
+    console.warn('Supabase intern_batches connection error:', err);
+  }
+};
+
+export const fetchBatchesFromSupabase = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('intern_batches')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) return data;
+  } catch (err) {
+    console.warn('Supabase fetch intern_batches error:', err);
+  }
+  return null;
+};
+
+export const deleteBatchFromSupabase = async (id) => {
+  try {
+    const { error } = await supabase
+      .from('intern_batches')
+      .delete()
+      .eq('id', id);
+    if (error) console.warn('Supabase delete batch error:', error.message);
+  } catch (err) {
+    console.warn('Supabase connection error:', err);
+  }
+};
+
+/* =================================================================== */
+/* SUPABASE ASSESSMENTS HELPERS (Quizzes, Benchmarks, Rubrics)        */
+/* =================================================================== */
+export const saveAssessmentToSupabase = async (assessmentObject) => {
+  try {
+    const { data, error } = await supabase
+      .from('intern_assessments')
+      .upsert([assessmentObject], { onConflict: 'id' });
+    if (error) console.warn('Supabase assessments upsert warning:', error.message);
+  } catch (err) {
+    console.warn('Supabase assessments error:', err);
+  }
+};
+
+export const fetchAssessmentsFromSupabase = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('intern_assessments')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) return data;
+  } catch (err) {
+    console.warn('Supabase fetch assessments error:', err);
+  }
+  return null;
+};
+
+/* =================================================================== */
+/* SUPABASE SUBMISSIONS HELPERS (Deliverables & Code PRs)             */
+/* =================================================================== */
+export const saveSubmissionToSupabase = async (subObject) => {
+  try {
+    const { data, error } = await supabase
+      .from('intern_submissions')
+      .upsert([subObject], { onConflict: 'id' });
+    if (error) console.warn('Supabase submissions upsert warning:', error.message);
+  } catch (err) {
+    console.warn('Supabase submissions error:', err);
+  }
+};
+
+export const fetchSubmissionsFromSupabase = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('intern_submissions')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && data && data.length > 0) return data;
+  } catch (err) {
+    console.warn('Supabase fetch submissions error:', err);
+  }
+  return null;
+};
+
+

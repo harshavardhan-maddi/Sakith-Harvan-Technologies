@@ -571,7 +571,8 @@ export const INITIAL_TEAM_MEMBERS = [
     phone: "+91 9014340739",
     joinedDate: "2026-07-01",
     status: "Active",
-    isExecutive: true
+    isExecutive: true,
+    performanceScore: 98
   },
   {
     id: "EMP-101",
@@ -581,7 +582,9 @@ export const INITIAL_TEAM_MEMBERS = [
     email: "ramesh.kumar@sakithharvan.com",
     phone: "+91 9848022334",
     joinedDate: "2026-07-15",
-    status: "Active"
+    status: "Active",
+    batch: "Core Engineering Team",
+    performanceScore: 92
   },
   {
     id: "EMP-102",
@@ -591,7 +594,9 @@ export const INITIAL_TEAM_MEMBERS = [
     email: "ananya.s@sakithharvan.com",
     phone: "+91 9848033445",
     joinedDate: "2026-07-20",
-    status: "Active"
+    status: "Active",
+    batch: "Core Engineering Team",
+    performanceScore: 96
   },
   {
     id: "INT-201",
@@ -601,7 +606,9 @@ export const INITIAL_TEAM_MEMBERS = [
     email: "saiteja.intern@sakithharvan.com",
     phone: "+91 9100234567",
     joinedDate: "2026-08-01",
-    status: "Active"
+    status: "Active",
+    batch: "Batch 2026-Alpha (AI & ML)",
+    performanceScore: 95
   },
   {
     id: "INT-202",
@@ -611,7 +618,54 @@ export const INITIAL_TEAM_MEMBERS = [
     email: "meghana.p@sakithharvan.com",
     phone: "+91 9100345678",
     joinedDate: "2026-08-05",
-    status: "Active"
+    status: "Active",
+    batch: "Batch 2026-Alpha (AI & ML)",
+    performanceScore: 88
+  },
+  {
+    id: "INT-203",
+    name: "Rohit Varma",
+    role: "Cloud & DevOps Intern",
+    type: "Intern",
+    email: "rohit.varma@sakithharvan.com",
+    phone: "+91 9100456789",
+    joinedDate: "2026-08-10",
+    status: "Active",
+    batch: "Batch 2026-Beta (FullStack & Cloud)",
+    performanceScore: 91
+  },
+  {
+    id: "INT-204",
+    name: "Sneha Reddy",
+    role: "Frontend & Mobile Apps Intern",
+    type: "Intern",
+    email: "sneha.reddy@sakithharvan.com",
+    phone: "+91 9100567890",
+    joinedDate: "2026-08-12",
+    status: "Active",
+    batch: "Batch 2026-Beta (FullStack & Cloud)",
+    performanceScore: 94
+  }
+];
+
+export const INITIAL_BATCHES = [
+  {
+    id: "BATCH-01",
+    name: "Batch 2026-Alpha (AI & ML)",
+    focus: "Agentic AI, LLM Fine-Tuning & Computer Vision",
+    startDate: "2026-08-01",
+    mentor: "Maddi Harshavardhan",
+    memberIds: ["INT-201", "INT-202"],
+    description: "Intensive cohort focusing on Agentic AI, Google Gemini API, LangChain pipelines, and high-impact SaaS development."
+  },
+  {
+    id: "BATCH-02",
+    name: "Batch 2026-Beta (FullStack & Cloud)",
+    focus: "React 18, Tailwind CSS, Supabase & AWS Serverless",
+    startDate: "2026-08-10",
+    mentor: "Thoka Sai Krishna",
+    memberIds: ["INT-203", "INT-204"],
+    description: "Cohort dedicated to scalable frontend microservices, cloud deployments, PWA architecture, and Supabase database modeling."
   }
 ];
 
@@ -622,6 +676,7 @@ export const INITIAL_ASSIGNED_TASKS = [
     memberName: "K. Ramesh Kumar",
     memberRole: "Senior Full Stack Engineer",
     memberType: "Employee",
+    batch: "Core Engineering Team",
     title: "Campus ERP Fee Management Module & Payment Gateway Integration",
     description: "Develop the complete fee payment microservice with Razorpay integration and instant receipt PDF generation for college ERP.",
     assignedDate: "2026-08-15",
@@ -639,6 +694,7 @@ export const INITIAL_ASSIGNED_TASKS = [
     memberName: "Ananya Sharma",
     memberRole: "Lead UI/UX & Frontend Architect",
     memberType: "Employee",
+    batch: "Core Engineering Team",
     title: "SaaS Mobile App Responsive UI Audit & Dark Mode System",
     description: "Refactor student attendance and timetable dashboards for ultra-smooth responsiveness and WCAG AA color accessibility.",
     assignedDate: "2026-08-18",
@@ -656,33 +712,247 @@ export const INITIAL_ASSIGNED_TASKS = [
     memberName: "V. Sai Teja",
     memberRole: "AI/ML Solutions Intern",
     memberType: "Intern",
+    batch: "Batch 2026-Alpha (AI & ML)",
     title: "Agentic AI Workshop Lab Scripts & LLM Pipeline Notebooks",
     description: "Prepare and verify Google Gemini API starter scripts and LangChain autonomous agent demonstrations for upcoming college workshops.",
     assignedDate: "2026-08-20",
     dueDate: "2026-09-02",
     priority: "High",
-    status: "In Progress",
-    progress: 60,
-    completedWorkNotes: "Completed 3 out of 5 Jupyter notebooks with API key setup and memory tools. Working on RAG vector store notebook.",
-    completedDate: "",
+    status: "Completed",
+    progress: 100,
+    completedWorkNotes: "Completed all 5 Jupyter notebooks with API key setup, memory tools, and RAG vector store notebook. Tested and verified in Colab.",
+    completedDate: "2026-08-28",
     deliverableUrl: "https://colab.research.google.com/sakith-harvan-ai-lab"
   },
   {
     id: "TSK-5004",
+    memberId: "INT-201",
+    memberName: "V. Sai Teja",
+    memberRole: "AI/ML Solutions Intern",
+    memberType: "Intern",
+    batch: "Batch 2026-Alpha (AI & ML)",
+    title: "RAG Vector Embeddings & Supabase pgvector Setup",
+    description: "Configure vector embeddings search for college document retrieval and student query resolution.",
+    assignedDate: "2026-08-24",
+    dueDate: "2026-09-05",
+    priority: "High",
+    status: "In Progress",
+    progress: 80,
+    completedWorkNotes: "Implemented text-embedding-3-small integration and database cosine distance queries. Accuracy test at 94%.",
+    completedDate: "",
+    deliverableUrl: "https://github.com/sakith-harvan/vector-search"
+  },
+  {
+    id: "TSK-5005",
+    memberId: "INT-201",
+    memberName: "V. Sai Teja",
+    memberRole: "AI/ML Solutions Intern",
+    memberType: "Intern",
+    batch: "Batch 2026-Alpha (AI & ML)",
+    title: "Real-time AI Chatbot Integration for Website",
+    description: "Embed dynamic contextual assistant with tool-calling capabilities on the client landing page.",
+    assignedDate: "2026-08-27",
+    dueDate: "2026-09-10",
+    priority: "Medium",
+    status: "In Progress",
+    progress: 45,
+    completedWorkNotes: "Created frontend chat bubble widget. Working on streaming responses and fallbacks.",
+    completedDate: "",
+    deliverableUrl: ""
+  },
+  {
+    id: "TSK-5006",
     memberId: "INT-202",
     memberName: "P. Meghana",
     memberRole: "Web & SaaS Development Intern",
     memberType: "Intern",
+    batch: "Batch 2026-Alpha (AI & ML)",
     title: "Client Requirement Inquiry Validation & Email Template Formatter",
     description: "Build clean HTML email response templates for instant auto-acknowledgment when clients book consultations.",
     assignedDate: "2026-08-22",
     dueDate: "2026-08-29",
     priority: "Medium",
+    status: "Completed",
+    progress: 100,
+    completedWorkNotes: "Created 3 responsive templates in HTML/CSS with brand logo and typography. Verified on Outlook, Gmail, and Apple Mail.",
+    completedDate: "2026-08-28",
+    deliverableUrl: "https://github.com/sakith-harvan/email-templates"
+  },
+  {
+    id: "TSK-5007",
+    memberId: "INT-202",
+    memberName: "P. Meghana",
+    memberRole: "Web & SaaS Development Intern",
+    memberType: "Intern",
+    batch: "Batch 2026-Alpha (AI & ML)",
+    title: "Quotation Generator PDF Export Optimization",
+    description: "Improve jsPDF / html2canvas rendering fidelity with custom corporate header and signature blocks.",
+    assignedDate: "2026-08-25",
+    dueDate: "2026-09-04",
+    priority: "High",
     status: "In Progress",
-    progress: 40,
-    completedWorkNotes: "Created 2 responsive templates in HTML/CSS with brand logo and typography. Testing email client compatibility across Outlook and Gmail.",
+    progress: 65,
+    completedWorkNotes: "Added crisp SVG logo vectorization and currency formatting. Fixing multi-page table wrapping.",
     completedDate: "",
-    deliverableUrl: ""
+    deliverableUrl: "https://github.com/sakith-harvan/pdf-engine"
+  },
+  {
+    id: "TSK-5008",
+    memberId: "INT-203",
+    memberName: "Rohit Varma",
+    memberRole: "Cloud & DevOps Intern",
+    memberType: "Intern",
+    batch: "Batch 2026-Beta (FullStack & Cloud)",
+    title: "GitHub Actions CI/CD Pipeline & Automated Staging Deployment",
+    description: "Configure GitHub workflows for lint checking, automated test runs, and preview branch deployments on Vercel.",
+    assignedDate: "2026-08-21",
+    dueDate: "2026-09-01",
+    priority: "High",
+    status: "Completed",
+    progress: 100,
+    completedWorkNotes: "Configured 3 automated jobs with branch protection rules and Slack notification webhooks.",
+    completedDate: "2026-08-30",
+    deliverableUrl: "https://github.com/sakith-harvan/ci-cd-pipelines"
+  },
+  {
+    id: "TSK-5009",
+    memberId: "INT-204",
+    memberName: "Sneha Reddy",
+    memberRole: "Frontend & Mobile Apps Intern",
+    memberType: "Intern",
+    batch: "Batch 2026-Beta (FullStack & Cloud)",
+    title: "PWA Service Worker Offline Caching & App Manifest Polish",
+    description: "Audit PWA install criteria, optimize asset precaching, and implement background sync for forms.",
+    assignedDate: "2026-08-23",
+    dueDate: "2026-09-03",
+    priority: "High",
+    status: "Completed",
+    progress: 100,
+    completedWorkNotes: "Service worker caches fonts, icons, and static bundles. Offline banner notification working seamlessly.",
+    completedDate: "2026-08-31",
+    deliverableUrl: "https://github.com/sakith-harvan/pwa-core"
   }
 ];
+
+export const INITIAL_ASSESSMENTS = [
+  {
+    id: "ASM-101",
+    memberId: "INT-201",
+    title: "Agentic AI & LLM Tool Calling Benchmark",
+    category: "AI/ML Engineering",
+    score: 95,
+    maxScore: 100,
+    status: "Passed",
+    date: "2026-08-26",
+    evaluator: "Maddi Harshavardhan (Founder & CEO)",
+    feedback: "Outstanding command over prompt structuring, structured JSON outputs, and LangChain memory handling."
+  },
+  {
+    id: "ASM-102",
+    memberId: "INT-201",
+    title: "Python Vector Search & Supabase pgvector Assessment",
+    category: "Backend & Database",
+    score: 92,
+    maxScore: 100,
+    status: "Passed",
+    date: "2026-08-29",
+    evaluator: "Thoka Sai Krishna (Co-Founder & COO)",
+    feedback: "Clean embeddings indexing and query optimization."
+  },
+  {
+    id: "ASM-103",
+    memberId: "INT-202",
+    title: "React Component Lifecycle & State Management Quiz",
+    category: "Frontend Development",
+    score: 88,
+    maxScore: 100,
+    status: "Passed",
+    date: "2026-08-27",
+    evaluator: "Ananya Sharma (Frontend Architect)",
+    feedback: "Good grasp of React hooks and context API. Recommended to deepen knowledge on memoization."
+  },
+  {
+    id: "ASM-104",
+    memberId: "INT-203",
+    title: "Docker Containerization & CI/CD Pipeline Evaluation",
+    category: "Cloud & DevOps",
+    score: 91,
+    maxScore: 100,
+    status: "Passed",
+    date: "2026-08-28",
+    evaluator: "K. Ramesh Kumar (Senior Engineer)",
+    feedback: "Solid multi-stage Docker build configurations and secure secret management."
+  },
+  {
+    id: "ASM-105",
+    memberId: "INT-204",
+    title: "PWA Service Workers & Responsive Design Test",
+    category: "Mobile & Web",
+    score: 94,
+    maxScore: 100,
+    status: "Passed",
+    date: "2026-08-30",
+    evaluator: "Ananya Sharma (Frontend Architect)",
+    feedback: "Flawless offline cache routing and lighthouse 100/100 PWA score."
+  }
+];
+
+export const INITIAL_SUBMISSIONS = [
+  {
+    id: "SUB-301",
+    memberId: "INT-201",
+    title: "Google Gemini Agent Lab Notebooks (PR #14)",
+    taskRef: "TSK-5003",
+    deliverableUrl: "https://colab.research.google.com/sakith-harvan-ai-lab",
+    type: "Colab Notebook / GitHub PR",
+    status: "Approved",
+    submittedDate: "2026-08-28",
+    reviewerRemarks: "Excellent lab exercises. Ready for next week's college workshop delivery."
+  },
+  {
+    id: "SUB-302",
+    memberId: "INT-201",
+    title: "pgvector Indexing Migration Scripts",
+    taskRef: "TSK-5004",
+    deliverableUrl: "https://github.com/sakith-harvan/vector-search",
+    type: "Source Code PR",
+    status: "Under Review",
+    submittedDate: "2026-08-31",
+    reviewerRemarks: "Currently under benchmark review for high-concurrency queries."
+  },
+  {
+    id: "SUB-303",
+    memberId: "INT-202",
+    title: "Corporate Consultation Auto-Responder HTML Pack",
+    taskRef: "TSK-5006",
+    deliverableUrl: "https://github.com/sakith-harvan/email-templates",
+    type: "Template Bundle",
+    status: "Approved",
+    submittedDate: "2026-08-28",
+    reviewerRemarks: "Responsive on all major email clients. Merged into production codebase."
+  },
+  {
+    id: "SUB-304",
+    memberId: "INT-203",
+    title: "Vercel + GitHub Actions Automated CI Workflow",
+    taskRef: "TSK-5008",
+    deliverableUrl: "https://github.com/sakith-harvan/ci-cd-pipelines",
+    type: "YAML Workflow",
+    status: "Approved",
+    submittedDate: "2026-08-30",
+    reviewerRemarks: "Production deployment pipeline automated successfully."
+  },
+  {
+    id: "SUB-305",
+    memberId: "INT-204",
+    title: "Offline Precaching & PWA Manifest Assets",
+    taskRef: "TSK-5009",
+    deliverableUrl: "https://github.com/sakith-harvan/pwa-core",
+    type: "PWA Package",
+    status: "Approved",
+    submittedDate: "2026-08-31",
+    reviewerRemarks: "Verified installability on Android, iOS Safari, and Windows Chrome."
+  }
+];
+
 

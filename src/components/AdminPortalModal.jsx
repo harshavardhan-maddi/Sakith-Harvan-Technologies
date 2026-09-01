@@ -7,7 +7,14 @@ import {
   Briefcase, GraduationCap, Link as LinkIcon, Check, Crown, AlertCircle, CheckSquare,
   KeyRound, ShieldCheck
 } from 'lucide-react';
-import { INITIAL_WORKSHOPS, INITIAL_TEAM_MEMBERS, INITIAL_ASSIGNED_TASKS } from '../data/defaultData';
+import { 
+  INITIAL_WORKSHOPS, 
+  INITIAL_TEAM_MEMBERS, 
+  INITIAL_ASSIGNED_TASKS,
+  INITIAL_BATCHES,
+  INITIAL_ASSESSMENTS,
+  INITIAL_SUBMISSIONS
+} from '../data/defaultData';
 import { Logo } from './Logo';
 import { QuotationMaker } from './QuotationMaker';
 import { 
@@ -63,6 +70,24 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
   const [workshops, setWorkshops] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [assignedTasks, setAssignedTasks] = useState([]);
+  const [batches, setBatches] = useState([]);
+  const [assessments, setAssessments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+
+  // Batch Management Modals & Selection
+  const [isAddingBatch, setIsAddingBatch] = useState(false);
+  const [selectedBatch, setSelectedBatch] = useState(null);
+  const [batchFormData, setBatchFormData] = useState({
+    id: '',
+    name: '',
+    focus: '',
+    mentor: 'Maddi Harshavardhan',
+    startDate: new Date().toISOString().split('T')[0],
+    description: ''
+  });
+
+  // Deep-dive Member Analytics Modal (for Intern or Employee)
+  const [analyzingMember, setAnalyzingMember] = useState(null);
 
   // Add Member Modal State (Add Emp / Add Intern)
   const [isAddingMember, setIsAddingMember] = useState(false);
@@ -72,7 +97,8 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     role: '',
     type: 'Employee',
     email: '',
-    phone: ''
+    phone: '',
+    batch: 'Batch 2026-Alpha (AI & ML)'
   });
 
   // Assign Task Modal State
@@ -88,7 +114,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
   });
 
   // Filter & Search states for Team & Work tab in Admin
-  const [teamTabSubFilter, setTeamTabSubFilter] = useState('tasks'); // 'tasks', 'intern_tasks', 'emp_tasks', 'members'
+  const [teamTabSubFilter, setTeamTabSubFilter] = useState('tasks'); // 'tasks', 'interns', 'employees', 'batches', 'members'
   const [adminTaskSearch, setAdminTaskSearch] = useState('');
   const [adminTaskStatusFilter, setAdminTaskStatusFilter] = useState('All');
   const [adminTaskMemberFilter, setAdminTaskMemberFilter] = useState('');
@@ -351,11 +377,56 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       }
     }
 
+    // Batches
+    const rawBatches = localStorage.getItem('sh_intern_batches');
+    let finalBatches;
+    if (rawBatches === null) {
+      finalBatches = INITIAL_BATCHES;
+      localStorage.setItem('sh_intern_batches', JSON.stringify(INITIAL_BATCHES));
+    } else {
+      try {
+        finalBatches = JSON.parse(rawBatches);
+      } catch (e) {
+        finalBatches = INITIAL_BATCHES;
+      }
+    }
+
+    // Assessments
+    const rawAssessments = localStorage.getItem('sh_intern_assessments');
+    let finalAssessments;
+    if (rawAssessments === null) {
+      finalAssessments = INITIAL_ASSESSMENTS;
+      localStorage.setItem('sh_intern_assessments', JSON.stringify(INITIAL_ASSESSMENTS));
+    } else {
+      try {
+        finalAssessments = JSON.parse(rawAssessments);
+      } catch (e) {
+        finalAssessments = INITIAL_ASSESSMENTS;
+      }
+    }
+
+    // Submissions
+    const rawSubmissions = localStorage.getItem('sh_intern_submissions');
+    let finalSubmissions;
+    if (rawSubmissions === null) {
+      finalSubmissions = INITIAL_SUBMISSIONS;
+      localStorage.setItem('sh_intern_submissions', JSON.stringify(INITIAL_SUBMISSIONS));
+    } else {
+      try {
+        finalSubmissions = JSON.parse(rawSubmissions);
+      } catch (e) {
+        finalSubmissions = INITIAL_SUBMISSIONS;
+      }
+    }
+
     setConsultations(finalConsultations);
     setRequirements(finalRequirements);
     setWorkshops(finalWorkshops);
     setTeamMembers(finalTeam);
     setAssignedTasks(finalTasks);
+    setBatches(finalBatches);
+    setAssessments(finalAssessments);
+    setSubmissions(finalSubmissions);
 
     // Cloud fetch
     fetchConsultationsFromSupabase().then((dbData) => {
@@ -901,6 +972,60 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
   const adminAvgProgressRate = assignedTasks.length > 0
     ? Math.round(assignedTasks.reduce((acc, t) => acc + (Number(t.progress) || (t.status === 'Completed' ? 100 : 0)), 0) / assignedTasks.length)
     : 0;
+
+  // Batch Management Handlers
+  const handleOpenAddBatch = () => {
+    const nextNum = batches.length + 1;
+    setBatchFormData({
+      id: `BATCH-0${nextNum}`,
+      name: `Batch 2026-Cohort-${String.fromCharCode(64 + nextNum)} (AI & Cloud)`,
+      focus: 'Agentic AI, Full Stack & Cloud Architecture',
+      mentor: 'Maddi Harshavardhan',
+      startDate: new Date().toISOString().split('T')[0],
+      description: 'Intensive sprint cohort for interns with hands-on technical deliverables and mentor evaluations.'
+    });
+    setIsAddingBatch(true);
+  };
+
+  const handleSaveBatch = (e) => {
+    e.preventDefault();
+    if (!batchFormData.name) {
+      alert('Please enter a batch name.');
+      return;
+    }
+
+    const newBatch = {
+      ...batchFormData,
+      id: batchFormData.id || (`BATCH-${Date.now()}`),
+      memberIds: batchFormData.memberIds || []
+    };
+
+    const updated = [newBatch, ...batches.filter(b => b.id !== newBatch.id)];
+    setBatches(updated);
+    localStorage.setItem('sh_intern_batches', JSON.stringify(updated));
+    window.dispatchEvent(new Event('sh_batches_updated'));
+    setIsAddingBatch(false);
+    setUpdateSuccessMsg(`Batch "${newBatch.name}" created successfully!`);
+    setTimeout(() => setUpdateSuccessMsg(''), 4000);
+  };
+
+  const handleDeleteBatch = (id) => {
+    if (window.confirm('Are you sure you want to delete this batch?')) {
+      const updated = batches.filter(b => b.id !== id);
+      setBatches(updated);
+      localStorage.setItem('sh_intern_batches', JSON.stringify(updated));
+      window.dispatchEvent(new Event('sh_batches_updated'));
+      if (selectedBatch?.id === id) setSelectedBatch(null);
+    }
+  };
+
+  const handleOpenBatchDetails = (batch) => {
+    setSelectedBatch(batch);
+  };
+
+  const handleOpenMemberAnalysis = (member) => {
+    setAnalyzingMember(member);
+  };
 
   if (!isOpen) return null;
 
@@ -1645,10 +1770,13 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                       {/* Sub-Tabs Selector */}
                       <div className="flex items-center gap-2 border-b border-white/10 pb-3 flex-wrap">
                         {[
-                          { id: 'tasks', label: `📋 All Tasks & Progress (${assignedTasks.length})` },
-                          { id: 'intern_tasks', label: `🎓 Intern Work Progress (${adminInternTasksCount})` },
-                          { id: 'emp_tasks', label: `💼 Employee Work Progress (${adminEmpTasksCount})` },
-                          { id: 'members', label: `👥 Staff Directory (${teamMembers.length})` }
+                          { id: 'tasks', label: `📋 All Tasks (${assignedTasks.length})` },
+                          { id: 'interns', label: `🎓 Interns (${teamMembers.filter(m => m.type === 'Intern').length})` },
+                          { id: 'employees', label: `💼 Employees (${teamMembers.filter(m => m.type === 'Employee').length})` },
+                          { id: 'batches', label: `📦 Batches (${batches.length})` },
+                          { id: 'intern_tasks', label: `🎯 Intern Tasks (${adminInternTasksCount})` },
+                          { id: 'emp_tasks', label: `⚡ Emp Tasks (${adminEmpTasksCount})` },
+                          { id: 'members', label: `👥 Directory (${teamMembers.length})` }
                         ].map((subTab) => (
                           <button
                             key={subTab.id}
@@ -1658,7 +1786,10 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                             }}
                             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                               teamTabSubFilter === subTab.id
-                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                                ? subTab.id === 'interns' ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                                : subTab.id === 'employees' ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30'
+                                : subTab.id === 'batches' ? 'bg-violet-600 text-white shadow-lg shadow-violet-600/30'
+                                : 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
                                 : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800'
                             }`}
                           >
@@ -1667,66 +1798,61 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                         ))}
                       </div>
 
-                      {/* Search, Member Select & Status Filter Controls (for task views) */}
-                      {teamTabSubFilter !== 'members' && (
-                        <div className="glass-card p-4 rounded-2xl border border-white/10 space-y-3 bg-slate-900/60">
-                          <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                            {/* Search */}
-                            <div className="sm:col-span-2 lg:col-span-2 relative">
-                              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                              <input
-                                type="text"
-                                value={adminTaskSearch}
-                                onChange={(e) => setAdminTaskSearch(e.target.value)}
-                                placeholder="Search by task title, member name, ID, or deliverable..."
-                                className="form-input pl-10 text-xs"
-                              />
-                              {adminTaskSearch && (
-                                <button
-                                  onClick={() => setAdminTaskSearch('')}
-                                  className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                      {/* 1. VIEW: TASKS LIST WITH PROGRESS & REVIEWS (for 'tasks', 'intern_tasks', 'emp_tasks') */}
+                      {(teamTabSubFilter === 'tasks' || teamTabSubFilter === 'intern_tasks' || teamTabSubFilter === 'emp_tasks') && (
+                        <div className="space-y-4">
+                          {/* Search, Member Select & Status Filter Controls */}
+                          <div className="glass-card p-4 rounded-2xl border border-white/10 space-y-3 bg-slate-900/60">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                              <div className="sm:col-span-2 lg:col-span-2 relative">
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                                <input
+                                  type="text"
+                                  value={adminTaskSearch}
+                                  onChange={(e) => setAdminTaskSearch(e.target.value)}
+                                  placeholder="Search by task title, member name, ID, or deliverable..."
+                                  className="form-input pl-10 text-xs"
+                                />
+                                {adminTaskSearch && (
+                                  <button
+                                    onClick={() => setAdminTaskSearch('')}
+                                    className="absolute right-3 top-3 text-slate-400 hover:text-white"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+
+                              <div>
+                                <select
+                                  value={adminTaskStatusFilter}
+                                  onChange={(e) => setAdminTaskStatusFilter(e.target.value)}
+                                  className="form-input text-xs"
                                 >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
+                                  <option value="All">All Statuses</option>
+                                  <option value="In Progress">In Progress</option>
+                                  <option value="Assigned">Assigned</option>
+                                  <option value="Completed">Completed</option>
+                                </select>
+                              </div>
 
-                            {/* Status Filter */}
-                            <div>
-                              <select
-                                value={adminTaskStatusFilter}
-                                onChange={(e) => setAdminTaskStatusFilter(e.target.value)}
-                                className="form-input text-xs"
-                              >
-                                <option value="All">All Statuses</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Assigned">Assigned</option>
-                                <option value="Completed">Completed</option>
-                              </select>
-                            </div>
-
-                            {/* Member Filter Dropdown */}
-                            <div>
-                              <select
-                                value={adminTaskMemberFilter}
-                                onChange={(e) => setAdminTaskMemberFilter(e.target.value)}
-                                className="form-input text-xs"
-                              >
-                                <option value="">Filter by Staff Member (All)</option>
-                                {teamMembers.map((m) => (
-                                  <option key={m.id} value={m.id}>
-                                    {m.name} ({m.id} - {m.type})
-                                  </option>
-                                ))}
-                              </select>
+                              <div>
+                                <select
+                                  value={adminTaskMemberFilter}
+                                  onChange={(e) => setAdminTaskMemberFilter(e.target.value)}
+                                  className="form-input text-xs"
+                                >
+                                  <option value="">Filter by Staff Member (All)</option>
+                                  {teamMembers.map((m) => (
+                                    <option key={m.id} value={m.id}>
+                                      {m.name} ({m.id} - {m.type})
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
 
-                      {/* CONTENT 1: TASK LIST WITH DETAILED WORK PROGRESS & DELIVERABLES */}
-                      {teamTabSubFilter !== 'members' ? (
-                        <div className="space-y-4">
                           {filteredAdminTasks.length === 0 ? (
                             <div className="glass-card p-12 text-center text-slate-400 space-y-3 rounded-2xl border border-white/10">
                               <CheckCircle2 className="w-12 h-12 text-slate-500 mx-auto" />
@@ -1873,7 +1999,6 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                                       </div>
                                     </div>
 
-                                    {/* Progress Track */}
                                     <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden p-0.5 border border-white/10">
                                       <div
                                         className={`h-full rounded-full transition-all duration-500 ${
@@ -2059,8 +2184,432 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                             })
                           )}
                         </div>
-                      ) : (
-                        /* CONTENT 2: STAFF WORKLOAD DIRECTORY */
+                      )}
+
+                      {/* 2. VIEW: INTERNS DIRECTORY & ANALYTICS */}
+                      {teamTabSubFilter === 'interns' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                              <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                <GraduationCap className="w-5 h-5 text-amber-400" />
+                                <span>Interns Directory, Performance &amp; Completion Analytics</span>
+                              </h4>
+                              <p className="text-xs text-slate-400">
+                                Real-time completion rates (% of completed tasks by given tasks), performance scores, and cohort batches.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={handleOpenAddBatch}
+                                className="px-3 py-1.5 rounded-xl bg-violet-950/80 hover:bg-violet-900 text-violet-300 border border-violet-500/40 text-xs font-bold flex items-center gap-1.5"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Create Batch</span>
+                              </button>
+                              <button
+                                onClick={() => handleOpenAddMember('Intern')}
+                                className="px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-amber-600/30"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Register Intern</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {teamMembers
+                              .filter((m) => m.type === 'Intern')
+                              .map((intern) => {
+                                const intTasks = assignedTasks.filter(
+                                  (t) => (t.memberId || '').toUpperCase() === intern.id.toUpperCase()
+                                );
+                                const intCompleted = intTasks.filter((t) => t.status === 'Completed').length;
+                                const completionPct = intTasks.length > 0 ? Math.round((intCompleted / intTasks.length) * 100) : 0;
+                                const score = intern.performanceScore || 92;
+
+                                return (
+                                  <div
+                                    key={intern.id}
+                                    className="glass-card p-5 rounded-2xl border border-amber-500/20 bg-slate-900/80 space-y-4 flex flex-col justify-between hover:border-amber-500/50 transition-all shadow-lg"
+                                  >
+                                    <div className="space-y-3">
+                                      {/* Header */}
+                                      <div className="flex items-start justify-between">
+                                        <div>
+                                          <div className="font-extrabold text-white text-base flex items-center gap-2">
+                                            <span>{intern.name}</span>
+                                            <span className="text-[10px] font-mono text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded-full border border-amber-500/30">
+                                              {intern.id}
+                                            </span>
+                                          </div>
+                                          <div className="text-xs text-slate-300 font-medium">{intern.role}</div>
+                                          <div className="text-[11px] text-amber-300/90 font-semibold mt-1 flex items-center gap-1">
+                                            <Award className="w-3.5 h-3.5 text-amber-400" />
+                                            <span>{intern.batch || 'Batch 2026-Alpha (AI & ML)'}</span>
+                                          </div>
+                                        </div>
+
+                                        <button
+                                          onClick={() => handleDeleteMember(intern.id)}
+                                          className="text-slate-500 hover:text-rose-400 p-1"
+                                          title="Remove Intern"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+
+                                      {/* Metrics Grid */}
+                                      <div className="grid grid-cols-2 gap-2 pt-1">
+                                        {/* Completion Percentage */}
+                                        <div className="p-3 rounded-xl bg-slate-950 border border-white/10 space-y-1">
+                                          <div className="text-[10px] text-slate-400">Task Completion</div>
+                                          <div className="text-xl font-extrabold text-cyan-400 font-mono">
+                                            {completionPct}%
+                                          </div>
+                                          <div className="text-[10px] text-slate-400">
+                                            {intCompleted} of {intTasks.length} done
+                                          </div>
+                                        </div>
+
+                                        {/* Performance Score */}
+                                        <div className="p-3 rounded-xl bg-slate-950 border border-white/10 space-y-1">
+                                          <div className="text-[10px] text-slate-400">Performance</div>
+                                          <div className="text-xl font-extrabold text-amber-300 font-mono">
+                                            {score}/100
+                                          </div>
+                                          <div className="text-[10px] text-emerald-400 font-semibold">
+                                            {score >= 90 ? '★ Top Tier' : score >= 80 ? 'Good Standing' : 'Needs Review'}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Progress Bar */}
+                                      <div className="space-y-1">
+                                        <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full ${
+                                              completionPct === 100 ? 'bg-emerald-400' : completionPct >= 50 ? 'bg-cyan-400' : 'bg-amber-400'
+                                            }`}
+                                            style={{ width: `${completionPct}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                                      <button
+                                        onClick={() => handleOpenMemberAnalysis(intern)}
+                                        className="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-bold flex items-center gap-1.5 border border-amber-500/30"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        <span>Full Analysis</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleOpenAssignTask(intern.id)}
+                                        className="btn-cyan py-1.5 px-3 text-xs font-bold flex items-center gap-1"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                        <span>Assign Task</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 3. VIEW: EMPLOYEES DIRECTORY & ANALYTICS */}
+                      {teamTabSubFilter === 'employees' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                              <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                <Briefcase className="w-5 h-5 text-cyan-400" />
+                                <span>Full-Time Employees &amp; Engineering Workload Analytics</span>
+                              </h4>
+                              <p className="text-xs text-slate-400">
+                                Engineering staff tasks completion rate, performance ratings, and work assignments.
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleOpenAddMember('Employee')}
+                              className="btn-primary py-1.5 px-3.5 text-xs font-bold flex items-center gap-1.5"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Register Employee</span>
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {teamMembers
+                              .filter((m) => m.type === 'Employee')
+                              .map((emp) => {
+                                const empTasks = assignedTasks.filter(
+                                  (t) => (t.memberId || '').toUpperCase() === emp.id.toUpperCase()
+                                );
+                                const empCompleted = empTasks.filter((t) => t.status === 'Completed').length;
+                                const completionPct = empTasks.length > 0 ? Math.round((empCompleted / empTasks.length) * 100) : 0;
+                                const score = emp.performanceScore || 95;
+
+                                return (
+                                  <div
+                                    key={emp.id}
+                                    className="glass-card p-5 rounded-2xl border border-cyan-500/20 bg-slate-900/80 space-y-4 flex flex-col justify-between hover:border-cyan-500/50 transition-all shadow-lg"
+                                  >
+                                    <div className="space-y-3">
+                                      <div className="flex items-start justify-between">
+                                        <div>
+                                          <div className="font-extrabold text-white text-base flex items-center gap-2">
+                                            {emp.isExecutive && <Crown className="w-4 h-4 text-amber-300" />}
+                                            <span>{emp.name}</span>
+                                            <span className="text-[10px] font-mono text-cyan-400 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                                              {emp.id}
+                                            </span>
+                                          </div>
+                                          <div className="text-xs text-slate-300 font-medium">{emp.role}</div>
+                                          {emp.email && <div className="text-[11px] text-slate-400 mt-0.5">{emp.email}</div>}
+                                        </div>
+
+                                        {!emp.isExecutive && (
+                                          <button
+                                            onClick={() => handleDeleteMember(emp.id)}
+                                            className="text-slate-500 hover:text-rose-400 p-1"
+                                            title="Remove Employee"
+                                          >
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Metrics Grid */}
+                                      <div className="grid grid-cols-2 gap-2 pt-1">
+                                        <div className="p-3 rounded-xl bg-slate-950 border border-white/10 space-y-1">
+                                          <div className="text-[10px] text-slate-400">Task Completion</div>
+                                          <div className="text-xl font-extrabold text-cyan-400 font-mono">
+                                            {completionPct}%
+                                          </div>
+                                          <div className="text-[10px] text-slate-400">
+                                            {empCompleted} of {empTasks.length} done
+                                          </div>
+                                        </div>
+
+                                        <div className="p-3 rounded-xl bg-slate-950 border border-white/10 space-y-1">
+                                          <div className="text-[10px] text-slate-400">Performance Score</div>
+                                          <div className="text-xl font-extrabold text-emerald-400 font-mono">
+                                            {score}/100
+                                          </div>
+                                          <div className="text-[10px] text-emerald-400 font-semibold">
+                                            {score >= 90 ? '★ Exceptional' : 'Active'}
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Progress Bar */}
+                                      <div className="space-y-1">
+                                        <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full ${
+                                              completionPct === 100 ? 'bg-emerald-400' : completionPct >= 50 ? 'bg-cyan-400' : 'bg-amber-400'
+                                            }`}
+                                            style={{ width: `${completionPct}%` }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                                      <button
+                                        onClick={() => handleOpenMemberAnalysis(emp)}
+                                        className="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold flex items-center gap-1.5 border border-cyan-500/30"
+                                      >
+                                        <Eye className="w-3.5 h-3.5" />
+                                        <span>Full Analysis</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleOpenAssignTask(emp.id)}
+                                        className="btn-cyan py-1.5 px-3 text-xs font-bold flex items-center gap-1"
+                                      >
+                                        <Plus className="w-3 h-3" />
+                                        <span>Assign Task</span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 4. VIEW: INTERN BATCHES MANAGEMENT */}
+                      {teamTabSubFilter === 'batches' && (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                              <h4 className="text-base font-bold text-white flex items-center gap-2">
+                                <Layers className="w-5 h-5 text-violet-400" />
+                                <span>Intern Batches &amp; Cohort Analytics Engine</span>
+                              </h4>
+                              <p className="text-xs text-slate-400">
+                                Create named intern batches, track batch-level task completion %, and inspect top performers in each cohort.
+                              </p>
+                            </div>
+                            <button
+                              onClick={handleOpenAddBatch}
+                              className="px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg shadow-violet-600/30"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>Create Named Batch</span>
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {batches.map((batch) => {
+                              // Find interns belonging to this batch
+                              const batchInterns = teamMembers.filter(
+                                (m) => m.type === 'Intern' && (m.batch === batch.name || batch.memberIds?.includes(m.id))
+                              );
+
+                              // Calculate batch tasks and completion
+                              const batchInternIds = batchInterns.map((i) => i.id.toUpperCase());
+                              const batchTasks = assignedTasks.filter((t) =>
+                                batchInternIds.includes((t.memberId || '').toUpperCase())
+                              );
+                              const batchCompletedTasks = batchTasks.filter((t) => t.status === 'Completed').length;
+                              const batchCompletionRate =
+                                batchTasks.length > 0 ? Math.round((batchCompletedTasks / batchTasks.length) * 100) : 0;
+
+                              const batchAvgScore =
+                                batchInterns.length > 0
+                                  ? Math.round(
+                                      batchInterns.reduce((acc, curr) => acc + (curr.performanceScore || 90), 0) /
+                                        batchInterns.length
+                                    )
+                                  : 90;
+
+                              // Calculate Top Intern Performer in this batch
+                              let topIntern = null;
+                              if (batchInterns.length > 0) {
+                                topIntern = [...batchInterns].sort((a, b) => {
+                                  const aTasks = assignedTasks.filter((t) => (t.memberId || '').toUpperCase() === a.id.toUpperCase());
+                                  const aComp = aTasks.length > 0 ? aTasks.filter(t => t.status === 'Completed').length / aTasks.length : 0;
+                                  const bTasks = assignedTasks.filter((t) => (t.memberId || '').toUpperCase() === b.id.toUpperCase());
+                                  const bComp = bTasks.length > 0 ? bTasks.filter(t => t.status === 'Completed').length / bTasks.length : 0;
+                                  
+                                  const aScore = (a.performanceScore || 90) + aComp * 10;
+                                  const bScore = (b.performanceScore || 90) + bComp * 10;
+                                  return bScore - aScore;
+                                })[0];
+                              }
+
+                              return (
+                                <div
+                                  key={batch.id}
+                                  className="glass-card p-6 rounded-3xl border border-violet-500/30 bg-slate-900/90 space-y-4 flex flex-col justify-between hover:border-violet-500/60 transition-all shadow-xl"
+                                >
+                                  <div className="space-y-3">
+                                    <div className="flex items-start justify-between">
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[10px] font-mono text-violet-300 bg-violet-950 px-2.5 py-0.5 rounded-full border border-violet-500/30 font-bold">
+                                            {batch.id}
+                                          </span>
+                                          <span className="text-xs text-slate-400">Started: {batch.startDate || '2026-06-01'}</span>
+                                        </div>
+                                        <h4 className="font-extrabold text-white text-lg mt-1">{batch.name}</h4>
+                                        <p className="text-xs text-cyan-300 font-medium">{batch.focus}</p>
+                                      </div>
+
+                                      <button
+                                        onClick={() => handleDeleteBatch(batch.id)}
+                                        className="text-slate-500 hover:text-rose-400 p-1"
+                                        title="Delete Batch"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+
+                                    {/* Batch Completion & Metrics */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                      <div className="p-3 rounded-xl bg-slate-950 border border-white/10 text-center space-y-0.5">
+                                        <div className="text-[10px] text-slate-400">Interns</div>
+                                        <div className="text-lg font-bold text-white">{batchInterns.length}</div>
+                                      </div>
+                                      <div className="p-3 rounded-xl bg-slate-950 border border-white/10 text-center space-y-0.5">
+                                        <div className="text-[10px] text-slate-400">Batch % Done</div>
+                                        <div className="text-lg font-bold text-violet-400 font-mono">
+                                          {batchCompletionRate}%
+                                        </div>
+                                      </div>
+                                      <div className="p-3 rounded-xl bg-slate-950 border border-white/10 text-center space-y-0.5">
+                                        <div className="text-[10px] text-slate-400">Avg Score</div>
+                                        <div className="text-lg font-bold text-amber-300 font-mono">
+                                          {batchAvgScore}
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Batch Task Completion Progress Bar */}
+                                    <div className="space-y-1">
+                                      <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-slate-400">Batch Task Completion Rate:</span>
+                                        <span className="font-mono font-bold text-violet-300">{batchCompletionRate}%</span>
+                                      </div>
+                                      <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+                                        <div
+                                          className="bg-gradient-to-r from-violet-500 to-fuchsia-500 h-full rounded-full"
+                                          style={{ width: `${batchCompletionRate}%` }}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Top Intern Performer Highlight */}
+                                    {topIntern && (
+                                      <div className="p-3 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-2.5">
+                                          <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-extrabold shadow-md">
+                                            <Crown className="w-4 h-4" />
+                                          </div>
+                                          <div>
+                                            <div className="text-[10px] uppercase tracking-wider font-extrabold text-amber-400">
+                                              Top Batch Performer
+                                            </div>
+                                            <div className="text-xs font-bold text-white">{topIntern.name} ({topIntern.id})</div>
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <div className="text-xs font-bold font-mono text-amber-300">
+                                            {topIntern.performanceScore || 95}/100
+                                          </div>
+                                          <div className="text-[10px] text-slate-400">Score Rating</div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                                    <span className="text-xs text-slate-400">Mentor: <strong className="text-slate-200">{batch.mentor || 'Maddi Harshavardhan'}</strong></span>
+                                    <button
+                                      onClick={() => handleOpenBatchDetails(batch)}
+                                      className="py-1.5 px-4 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-violet-600/30"
+                                    >
+                                      <span>Inspect Batch</span>
+                                      <ArrowRight className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* 5. VIEW: ALL STAFF DIRECTORY */}
+                      {teamTabSubFilter === 'members' && (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {teamMembers.map((member) => {
                             const memTasks = assignedTasks.filter(
@@ -2134,21 +2683,19 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
 
                                 <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs gap-2">
                                   <button
+                                    onClick={() => handleOpenMemberAnalysis(member)}
+                                    className="py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-bold flex items-center gap-1.5 border border-cyan-500/30"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>Analysis</span>
+                                  </button>
+
+                                  <button
                                     onClick={() => handleOpenAssignTask(member.id)}
                                     className="btn-cyan py-1.5 px-3 text-xs flex items-center gap-1 font-bold"
                                   >
                                     <Plus className="w-3.5 h-3.5" />
                                     <span>Assign Work</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => {
-                                      setTeamTabSubFilter('tasks');
-                                      setAdminTaskMemberFilter(member.id);
-                                    }}
-                                    className="text-xs text-blue-400 hover:text-cyan-300 font-semibold underline"
-                                  >
-                                    View Tasks ({memTasks.length}) &rarr;
                                   </button>
                                 </div>
                               </div>
@@ -3004,6 +3551,456 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Create Batch Modal */}
+      {isAddingBatch && (
+        <div className="fixed inset-0 z-[120] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="glass-card max-w-lg w-full p-6 sm:p-8 rounded-3xl border border-violet-500/50 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-violet-400" />
+                <h3 className="text-base sm:text-lg font-bold text-white">Create New Intern Batch</h3>
+              </div>
+              <button onClick={() => setIsAddingBatch(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveBatch} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Batch Code / ID *</label>
+                  <input
+                    type="text"
+                    required
+                    value={batchFormData.id}
+                    onChange={(e) => setBatchFormData({ ...batchFormData, id: e.target.value.toUpperCase() })}
+                    placeholder="BATCH-03"
+                    className="form-input text-xs uppercase font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={batchFormData.startDate}
+                    onChange={(e) => setBatchFormData({ ...batchFormData, startDate: e.target.value })}
+                    className="form-input text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Batch Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={batchFormData.name}
+                  onChange={(e) => setBatchFormData({ ...batchFormData, name: e.target.value })}
+                  placeholder="e.g. Batch 2026-Gamma (Cybersecurity & DevOps)"
+                  className="form-input text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Technical Focus / Domain *</label>
+                <input
+                  type="text"
+                  required
+                  value={batchFormData.focus}
+                  onChange={(e) => setBatchFormData({ ...batchFormData, focus: e.target.value })}
+                  placeholder="e.g. AI Agents, LLM Fine-Tuning & Kubernetes"
+                  className="form-input text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Assigned Mentor</label>
+                <input
+                  type="text"
+                  value={batchFormData.mentor}
+                  onChange={(e) => setBatchFormData({ ...batchFormData, mentor: e.target.value })}
+                  placeholder="Maddi Harshavardhan"
+                  className="form-input text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Batch Description &amp; Objectives</label>
+                <textarea
+                  rows="3"
+                  value={batchFormData.description}
+                  onChange={(e) => setBatchFormData({ ...batchFormData, description: e.target.value })}
+                  placeholder="Goals for this cohort, expected project deliverables, and weekly milestones..."
+                  className="form-input text-xs"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2 border-t border-white/10">
+                <button type="button" onClick={() => setIsAddingBatch(false)} className="btn-secondary py-2 px-4 text-xs">
+                  Cancel
+                </button>
+                <button type="submit" className="py-2 px-5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-bold text-xs shadow-lg shadow-violet-600/30">
+                  Create Batch
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Batch Details & Top Performer Spotlight Modal */}
+      {selectedBatch && (
+        <div className="fixed inset-0 z-[125] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="glass-card max-w-2xl w-full p-6 sm:p-8 rounded-3xl border border-violet-500/50 space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-start justify-between border-b border-white/10 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-violet-300 bg-violet-950 px-2.5 py-0.5 rounded-full border border-violet-500/30 font-bold">
+                    {selectedBatch.id}
+                  </span>
+                  <span className="text-xs text-slate-400">Mentor: {selectedBatch.mentor || 'Maddi Harshavardhan'}</span>
+                </div>
+                <h3 className="text-xl font-extrabold text-white mt-1">{selectedBatch.name}</h3>
+                <p className="text-xs text-cyan-300 font-medium">{selectedBatch.focus}</p>
+              </div>
+              <button onClick={() => setSelectedBatch(null)} className="text-slate-400 hover:text-white p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Batch Aggregates */}
+            {(() => {
+              const batchInterns = teamMembers.filter(
+                (m) => m.type === 'Intern' && (m.batch === selectedBatch.name || selectedBatch.memberIds?.includes(m.id))
+              );
+              const batchInternIds = batchInterns.map((i) => i.id.toUpperCase());
+              const batchTasks = assignedTasks.filter((t) =>
+                batchInternIds.includes((t.memberId || '').toUpperCase())
+              );
+              const batchCompletedTasks = batchTasks.filter((t) => t.status === 'Completed').length;
+              const batchCompletionRate =
+                batchTasks.length > 0 ? Math.round((batchCompletedTasks / batchTasks.length) * 100) : 0;
+
+              // Compute Top Intern Performer
+              let topIntern = null;
+              if (batchInterns.length > 0) {
+                topIntern = [...batchInterns].sort((a, b) => {
+                  const aTasks = assignedTasks.filter((t) => (t.memberId || '').toUpperCase() === a.id.toUpperCase());
+                  const aComp = aTasks.length > 0 ? aTasks.filter(t => t.status === 'Completed').length / aTasks.length : 0;
+                  const bTasks = assignedTasks.filter((t) => (t.memberId || '').toUpperCase() === b.id.toUpperCase());
+                  const bComp = bTasks.length > 0 ? bTasks.filter(t => t.status === 'Completed').length / bTasks.length : 0;
+                  return ((b.performanceScore || 90) + bComp * 10) - ((a.performanceScore || 90) + aComp * 10);
+                })[0];
+              }
+
+              return (
+                <div className="space-y-4">
+                  {/* KPI Bar */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3.5 rounded-2xl bg-slate-900 border border-white/10 text-center">
+                      <div className="text-[11px] text-slate-400">Total Interns</div>
+                      <div className="text-xl font-extrabold text-white">{batchInterns.length}</div>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-900 border border-white/10 text-center">
+                      <div className="text-[11px] text-slate-400">Batch % Done</div>
+                      <div className="text-xl font-extrabold text-violet-400 font-mono">{batchCompletionRate}%</div>
+                    </div>
+                    <div className="p-3.5 rounded-2xl bg-slate-900 border border-white/10 text-center">
+                      <div className="text-[11px] text-slate-400">Total Tasks</div>
+                      <div className="text-xl font-extrabold text-cyan-400">{batchTasks.length} ({batchCompletedTasks} Done)</div>
+                    </div>
+                  </div>
+
+                  {/* Top Intern Performer Award Card */}
+                  {topIntern && (
+                    <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-950/60 via-slate-900 to-amber-950/60 border border-amber-500/50 shadow-xl space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-xl bg-amber-500 text-slate-950 font-black">
+                            <Crown className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="text-[11px] font-black uppercase tracking-wider text-amber-400">
+                              🏆 Top Performer in {selectedBatch.name}
+                            </div>
+                            <h4 className="text-base font-extrabold text-white">{topIntern.name} ({topIntern.id})</h4>
+                          </div>
+                        </div>
+
+                        <div className="text-right">
+                          <div className="text-xl font-extrabold text-amber-300 font-mono">{topIntern.performanceScore || 95}/100</div>
+                          <div className="text-[10px] text-slate-400 font-semibold">Evaluation Rating</div>
+                        </div>
+                      </div>
+
+                      <p className="text-xs text-slate-300">
+                        {topIntern.name} has demonstrated the highest task completion velocity and technical evaluation score across the cohort.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Batch Interns List */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                        Interns in this Batch ({batchInterns.length})
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setSelectedBatch(null);
+                          handleOpenAddMember('Intern');
+                        }}
+                        className="text-xs text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Intern to Batch</span>
+                      </button>
+                    </div>
+
+                    {batchInterns.length === 0 ? (
+                      <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/10 text-center text-xs text-slate-400">
+                        No interns currently assigned to this batch. Click "Add Intern to Batch" to assign members.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {batchInterns.map((intern) => {
+                          const iTasks = assignedTasks.filter((t) => (t.memberId || '').toUpperCase() === intern.id.toUpperCase());
+                          const iDone = iTasks.filter((t) => t.status === 'Completed').length;
+                          const iRate = iTasks.length > 0 ? Math.round((iDone / iTasks.length) * 100) : 0;
+
+                          return (
+                            <div
+                              key={intern.id}
+                              className="p-3.5 rounded-2xl bg-slate-900 border border-white/10 flex items-center justify-between gap-3 text-xs"
+                            >
+                              <div className="space-y-0.5">
+                                <div className="font-bold text-white flex items-center gap-2">
+                                  <span>{intern.name}</span>
+                                  <span className="text-[10px] font-mono text-slate-400">({intern.id})</span>
+                                </div>
+                                <div className="text-slate-400 text-[11px]">{intern.role}</div>
+                              </div>
+
+                              <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                  <div className="font-mono font-bold text-cyan-400">{iRate}% Completed</div>
+                                  <div className="text-[10px] text-slate-400">{iDone} of {iTasks.length} tasks</div>
+                                </div>
+
+                                <div className="text-right">
+                                  <div className="font-mono font-bold text-amber-300">{intern.performanceScore || 90}/100</div>
+                                  <div className="text-[10px] text-slate-400">Score</div>
+                                </div>
+
+                                <button
+                                  onClick={() => {
+                                    setSelectedBatch(null);
+                                    handleOpenMemberAnalysis(intern);
+                                  }}
+                                  className="btn-secondary py-1 px-2.5 text-[11px]"
+                                >
+                                  Inspect
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* 7. Deep-Dive Member Analytics Modal (for Intern or Employee) */}
+      {analyzingMember && (
+        <div className="fixed inset-0 z-[130] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="glass-card max-w-3xl w-full p-6 sm:p-8 rounded-3xl border border-cyan-500/50 space-y-6 max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center font-extrabold text-white text-lg shadow-lg">
+                  {analyzingMember.name.slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-extrabold text-white">{analyzingMember.name}</h3>
+                    <span className="text-xs font-mono text-cyan-300 bg-cyan-950 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                      {analyzingMember.id}
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      analyzingMember.type === 'Intern'
+                        ? 'bg-amber-950 text-amber-300 border border-amber-500/30'
+                        : 'bg-cyan-950 text-cyan-300 border border-cyan-500/30'
+                    }`}>
+                      {analyzingMember.type}
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-300">{analyzingMember.role}</div>
+                  {analyzingMember.batch && (
+                    <div className="text-[11px] text-amber-300/90 font-semibold mt-0.5 flex items-center gap-1">
+                      <Award className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{analyzingMember.batch}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button onClick={() => setAnalyzingMember(null)} className="text-slate-400 hover:text-white p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Compute Member Stats */}
+            {(() => {
+              const memTasks = assignedTasks.filter(
+                (t) => (t.memberId || '').toUpperCase() === analyzingMember.id.toUpperCase()
+              );
+              const memCompleted = memTasks.filter((t) => t.status === 'Completed').length;
+              const memInProgress = memTasks.filter((t) => t.status === 'In Progress' || t.status === 'Assigned').length;
+              const completionPct = memTasks.length > 0 ? Math.round((memCompleted / memTasks.length) * 100) : 0;
+              const memAssessments = assessments.filter(
+                (a) => (a.memberId || '').toUpperCase() === analyzingMember.id.toUpperCase()
+              );
+              const memSubmissions = submissions.filter(
+                (s) => (s.memberId || '').toUpperCase() === analyzingMember.id.toUpperCase()
+              );
+
+              return (
+                <div className="space-y-5 text-xs">
+                  {/* Top Analytics Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-1">
+                      <div className="text-slate-400 text-[11px]">Completion Rate</div>
+                      <div className="text-2xl font-extrabold text-cyan-400 font-mono">{completionPct}%</div>
+                      <div className="text-[10px] text-slate-400">{memCompleted}/{memTasks.length} Done</div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-1">
+                      <div className="text-slate-400 text-[11px]">Performance Score</div>
+                      <div className="text-2xl font-extrabold text-amber-300 font-mono">
+                        {analyzingMember.performanceScore || 92}/100
+                      </div>
+                      <div className="text-[10px] text-emerald-400">★ High Performing</div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-1">
+                      <div className="text-slate-400 text-[11px]">Active Tasks</div>
+                      <div className="text-2xl font-extrabold text-white">{memInProgress}</div>
+                      <div className="text-[10px] text-slate-400">In Sprint</div>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-1">
+                      <div className="text-slate-400 text-[11px]">Deliverables</div>
+                      <div className="text-2xl font-extrabold text-fuchsia-400">{memSubmissions.length}</div>
+                      <div className="text-[10px] text-slate-400">PRs &amp; Work Notes</div>
+                    </div>
+                  </div>
+
+                  {/* Task Completion Progress Gauge */}
+                  <div className="p-4 rounded-2xl bg-slate-900 border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white">Overall Task Completion Percentage:</span>
+                      <span className="font-mono font-extrabold text-cyan-400 text-sm">{completionPct}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-3 overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${
+                          completionPct === 100 ? 'bg-emerald-400' : completionPct >= 50 ? 'bg-cyan-400' : 'bg-amber-400'
+                        }`}
+                        style={{ width: `${completionPct}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Assigned Tasks History */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
+                        Assigned Tasks &amp; Milestones ({memTasks.length})
+                      </h4>
+                      <button
+                        onClick={() => handleOpenAssignTask(analyzingMember.id)}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Assign New Task</span>
+                      </button>
+                    </div>
+
+                    {memTasks.length === 0 ? (
+                      <p className="text-slate-400 italic">No tasks currently assigned to this member.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {memTasks.map((t) => (
+                          <div
+                            key={t.id}
+                            className="p-3 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between gap-3"
+                          >
+                            <div className="space-y-0.5">
+                              <div className="font-bold text-white flex items-center gap-2">
+                                <span>{t.title}</span>
+                                <span className="text-[10px] font-mono text-slate-400">({t.id})</span>
+                              </div>
+                              <div className="text-[11px] text-slate-300">{t.description.slice(0, 70)}...</div>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                t.status === 'Completed'
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                              }`}>
+                                {t.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Submissions & Deliverables */}
+                  <div className="space-y-2">
+                    <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
+                      Submitted Code Deliverables &amp; PRs ({memSubmissions.length})
+                    </h4>
+                    {memSubmissions.length === 0 ? (
+                      <p className="text-slate-400 italic">No deliverable URLs submitted yet.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {memSubmissions.map((s) => (
+                          <div
+                            key={s.id}
+                            className="p-3 rounded-xl bg-slate-900/90 border border-white/10 flex items-center justify-between gap-3"
+                          >
+                            <div>
+                              <div className="font-bold text-white">{s.title}</div>
+                              <div className="text-[11px] text-slate-400">Type: {s.type}</div>
+                            </div>
+                            <a
+                              href={s.deliverableUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn-cyan py-1 px-3 text-xs font-bold flex items-center gap-1"
+                            >
+                              <span>View Code</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
