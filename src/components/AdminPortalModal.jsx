@@ -202,102 +202,74 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     window.addEventListener('sh_tasks_updated', handleTaskUpdate);
 
     // Supabase Realtime & Global Broadcast channel
-    const channel = supabase
-      .channel('global_staff_sync')
-      .on('broadcast', { event: 'MEMBER_DELETED' }, (payload) => {
-        const delId = payload.payload?.id;
-        if (delId) {
-          const deletedIds = JSON.parse(localStorage.getItem('sh_deleted_members') || '[]');
-          if (!deletedIds.includes(delId)) {
-            deletedIds.push(delId);
-            localStorage.setItem('sh_deleted_members', JSON.stringify(deletedIds));
+    let channel = null;
+    try {
+      const channelId = `admin_portal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      channel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'requirements' },
+          (payload) => {
+            if (payload.new) {
+              setRequirements((prev) => {
+                if (prev.some(item => item.id === payload.new.id)) return prev;
+                return [payload.new, ...prev];
+              });
+            }
           }
-
-          setTeamMembers((prev) => {
-            const updated = prev.filter((m) => m.id.toUpperCase() !== delId.toUpperCase());
-            localStorage.setItem('sh_team_members', JSON.stringify(updated));
-            return updated;
-          });
-        }
-      })
-      .on('broadcast', { event: 'MEMBER_CREATED' }, (payload) => {
-        if (payload.payload?.id) {
-          const newM = payload.payload;
-          setTeamMembers((prev) => {
-            const updated = [newM, ...prev.filter((m) => m.id.toUpperCase() !== newM.id.toUpperCase())];
-            localStorage.setItem('sh_team_members', JSON.stringify(updated));
-            return updated;
-          });
-        }
-      })
-      .on('broadcast', { event: 'MEMBER_UPDATED' }, (payload) => {
-        if (payload.payload?.id) {
-          const upM = payload.payload;
-          setTeamMembers((prev) => {
-            const updated = prev.map((m) => (m.id.toUpperCase() === upM.id.toUpperCase() ? { ...m, ...upM } : m));
-            localStorage.setItem('sh_team_members', JSON.stringify(updated));
-            return updated;
-          });
-        }
-      })
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'requirements' },
-        (payload) => {
-          if (payload.new) {
-            setRequirements((prev) => {
-              if (prev.some(item => item.id === payload.new.id)) return prev;
-              return [payload.new, ...prev];
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'consultations' },
+          (payload) => {
+            if (payload.new) {
+              setConsultations((prev) => {
+                if (prev.some(item => item.id === payload.new.id)) return prev;
+                return [payload.new, ...prev];
+              });
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'assigned_tasks' },
+          () => {
+            fetchTasksFromSupabase().then((dbTasks) => {
+              if (dbTasks && dbTasks.length > 0) {
+                setAssignedTasks(dbTasks);
+                localStorage.setItem('sh_assigned_tasks', JSON.stringify(dbTasks));
+              }
             });
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'consultations' },
-        (payload) => {
-          if (payload.new) {
-            setConsultations((prev) => {
-              if (prev.some(item => item.id === payload.new.id)) return prev;
-              return [payload.new, ...prev];
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'team_members' },
+          () => {
+            fetchTeamMembersFromSupabase().then((dbMembers) => {
+              if (dbMembers && dbMembers.length > 0) {
+                const deletedIds = JSON.parse(localStorage.getItem('sh_deleted_members') || '[]');
+                const filtered = dbMembers.filter((m) => !deletedIds.includes(m.id));
+                setTeamMembers(filtered);
+                localStorage.setItem('sh_team_members', JSON.stringify(filtered));
+              }
             });
           }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'assigned_tasks' },
-        () => {
-          fetchTasksFromSupabase().then((dbTasks) => {
-            if (dbTasks && dbTasks.length > 0) {
-              setAssignedTasks(dbTasks);
-              localStorage.setItem('sh_assigned_tasks', JSON.stringify(dbTasks));
-            }
-          });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'team_members' },
-        () => {
-          fetchTeamMembersFromSupabase().then((dbMembers) => {
-            if (dbMembers && dbMembers.length > 0) {
-              const deletedIds = JSON.parse(localStorage.getItem('sh_deleted_members') || '[]');
-              const filtered = dbMembers.filter((m) => !deletedIds.includes(m.id));
-              setTeamMembers(filtered);
-              localStorage.setItem('sh_team_members', JSON.stringify(filtered));
-            }
-          });
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription error:', e);
+    }
 
     return () => {
       window.removeEventListener('sh_requirements_updated', handleReqUpdate);
       window.removeEventListener('sh_consultations_updated', handleConsultUpdate);
       window.removeEventListener('sh_team_updated', handleTeamUpdate);
       window.removeEventListener('sh_tasks_updated', handleTaskUpdate);
-      supabase.removeChannel(channel);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch (e) {}
+      }
     };
   }, []);
 

@@ -227,7 +227,8 @@ export const saveTeamMemberToSupabase = async (memberObject) => {
 
   // Broadcast to all connected devices instantly
   try {
-    const channel = supabase.channel('global_staff_sync');
+    const channelId = `broadcast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const channel = supabase.channel(channelId);
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
@@ -235,6 +236,9 @@ export const saveTeamMemberToSupabase = async (memberObject) => {
           event: 'MEMBER_CREATED',
           payload: memberObject
         });
+        setTimeout(() => {
+          try { supabase.removeChannel(channel); } catch(e) {}
+        }, 1000);
       }
     });
   } catch (e) {
@@ -276,7 +280,8 @@ export const deleteTeamMemberFromSupabase = async (id) => {
 
   // Broadcast deletion to all connected devices instantly
   try {
-    const channel = supabase.channel('global_staff_sync');
+    const channelId = `broadcast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const channel = supabase.channel(channelId);
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
@@ -284,6 +289,9 @@ export const deleteTeamMemberFromSupabase = async (id) => {
           event: 'MEMBER_DELETED',
           payload: { id }
         });
+        setTimeout(() => {
+          try { supabase.removeChannel(channel); } catch(e) {}
+        }, 1000);
       }
     });
   } catch (e) {
@@ -293,7 +301,8 @@ export const deleteTeamMemberFromSupabase = async (id) => {
 
 export const broadcastStaffUpdate = (event, payload) => {
   try {
-    const channel = supabase.channel('global_staff_sync');
+    const channelId = `broadcast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const channel = supabase.channel(channelId);
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
@@ -301,6 +310,9 @@ export const broadcastStaffUpdate = (event, payload) => {
           event: event,
           payload: payload
         });
+        setTimeout(() => {
+          try { supabase.removeChannel(channel); } catch(e) {}
+        }, 1000);
       }
     });
   } catch (e) {
