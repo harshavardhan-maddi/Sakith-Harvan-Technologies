@@ -120,9 +120,56 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
     window.addEventListener('sh_team_updated', handleTasksUpdate);
     window.addEventListener('sh_batches_updated', handleTasksUpdate);
 
-    // Supabase realtime subscription
+    // Supabase realtime subscription & global broadcast channel
     const channel = supabase
-      .channel('public_staff_tasks_realtime')
+      .channel('global_staff_sync')
+      .on('broadcast', { event: 'MEMBER_DELETED' }, (payload) => {
+        const delId = payload.payload?.id;
+        if (delId) {
+          // Add to deleted IDs set in localStorage
+          const deletedIds = JSON.parse(localStorage.getItem('sh_deleted_members') || '[]');
+          if (!deletedIds.includes(delId)) {
+            deletedIds.push(delId);
+            localStorage.setItem('sh_deleted_members', JSON.stringify(deletedIds));
+          }
+
+          setTeamMembers((prev) => {
+            const updated = prev.filter((m) => m.id.toUpperCase() !== delId.toUpperCase());
+            localStorage.setItem('sh_team_members', JSON.stringify(updated));
+            return updated;
+          });
+
+          // If this deleted user is currently logged in on this device, log them out
+          if (authenticatedMember && authenticatedMember.id?.toUpperCase() === delId.toUpperCase()) {
+            setAuthenticatedMember(null);
+            setAuthError('Your account was deleted by the administrator.');
+          }
+        }
+      })
+      .on('broadcast', { event: 'MEMBER_CREATED' }, (payload) => {
+        if (payload.payload?.id) {
+          const newM = payload.payload;
+          setTeamMembers((prev) => {
+            const updated = [newM, ...prev.filter((m) => m.id.toUpperCase() !== newM.id.toUpperCase())];
+            localStorage.setItem('sh_team_members', JSON.stringify(updated));
+            return updated;
+          });
+        }
+      })
+      .on('broadcast', { event: 'MEMBER_UPDATED' }, (payload) => {
+        if (payload.payload?.id) {
+          const upM = payload.payload;
+          setTeamMembers((prev) => {
+            const updated = prev.map((m) => (m.id.toUpperCase() === upM.id.toUpperCase() ? { ...m, ...upM } : m));
+            localStorage.setItem('sh_team_members', JSON.stringify(updated));
+            return updated;
+          });
+
+          if (authenticatedMember && authenticatedMember.id?.toUpperCase() === upM.id.toUpperCase()) {
+            setAuthenticatedMember((prev) => ({ ...prev, ...upM }));
+          }
+        }
+      })
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'assigned_tasks' },
@@ -145,20 +192,25 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
       window.removeEventListener('sh_batches_updated', handleTasksUpdate);
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [authenticatedMember]);
 
   const loadData = () => {
+    const deletedIds = JSON.parse(localStorage.getItem('sh_deleted_members') || '[]');
+
     // 1. Team Members
     const storedMembers = localStorage.getItem('sh_team_members');
     if (storedMembers) {
       try {
-        setTeamMembers(JSON.parse(storedMembers));
+        const parsed = JSON.parse(storedMembers).filter((m) => !deletedIds.includes(m.id));
+        setTeamMembers(parsed);
       } catch (e) {
-        setTeamMembers(INITIAL_TEAM_MEMBERS);
+        const def = INITIAL_TEAM_MEMBERS.filter((m) => !deletedIds.includes(m.id));
+        setTeamMembers(def);
       }
     } else {
-      setTeamMembers(INITIAL_TEAM_MEMBERS);
-      localStorage.setItem('sh_team_members', JSON.stringify(INITIAL_TEAM_MEMBERS));
+      const def = INITIAL_TEAM_MEMBERS.filter((m) => !deletedIds.includes(m.id));
+      setTeamMembers(def);
+      localStorage.setItem('sh_team_members', JSON.stringify(def));
     }
 
     // 2. Assigned Tasks
@@ -511,6 +563,11 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
 
   const handleDeleteMember = (id) => {
     if (window.confirm(`Are you sure you want to remove team member ${id}?`)) {
+      const deletedIds = JSON.parse(localStorage.getItem('sh_deleted_members') || '[]');
+      if (!deletedIds.includes(id)) {
+        deletedIds.push(id);
+        localStorage.setItem('sh_deleted_members', JSON.stringify(deletedIds));
+      }
       const updated = teamMembers.filter(m => m.id !== id);
       setTeamMembers(updated);
       localStorage.setItem('sh_team_members', JSON.stringify(updated));

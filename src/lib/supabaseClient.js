@@ -224,6 +224,22 @@ export const saveTeamMemberToSupabase = async (memberObject) => {
   } catch (err) {
     console.warn('Supabase team_members connection error:', err);
   }
+
+  // Broadcast to all connected devices instantly
+  try {
+    const channel = supabase.channel('global_staff_sync');
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'MEMBER_CREATED',
+          payload: memberObject
+        });
+      }
+    });
+  } catch (e) {
+    console.warn('Broadcast error:', e);
+  }
 };
 
 export const fetchTeamMembersFromSupabase = async () => {
@@ -248,8 +264,47 @@ export const deleteTeamMemberFromSupabase = async (id) => {
       .delete()
       .eq('id', id);
     if (error) console.warn('Supabase delete team member error:', error.message);
+
+    // Also delete associated tasks from Supabase
+    await supabase
+      .from('assigned_tasks')
+      .delete()
+      .eq('memberId', id);
   } catch (err) {
     console.warn('Supabase connection error:', err);
+  }
+
+  // Broadcast deletion to all connected devices instantly
+  try {
+    const channel = supabase.channel('global_staff_sync');
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: 'MEMBER_DELETED',
+          payload: { id }
+        });
+      }
+    });
+  } catch (e) {
+    console.warn('Broadcast error:', e);
+  }
+};
+
+export const broadcastStaffUpdate = (event, payload) => {
+  try {
+    const channel = supabase.channel('global_staff_sync');
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel.send({
+          type: 'broadcast',
+          event: event,
+          payload: payload
+        });
+      }
+    });
+  } catch (e) {
+    console.warn('Broadcast error:', e);
   }
 };
 
