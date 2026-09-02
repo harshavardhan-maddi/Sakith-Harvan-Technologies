@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { TaskProvider } from './lib/taskStore';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { TrustIntro } from './components/TrustIntro';

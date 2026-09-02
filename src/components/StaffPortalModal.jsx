@@ -18,8 +18,10 @@ import {
   deleteTeamMemberFromSupabase,
   supabase
 } from '../lib/supabaseClient';
+import { useTask } from '../lib/taskStore';
 
 export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', initialUser = null, onOpenAdmin }) => {
+  const { tasks, addTask, updateTask, removeTask } = useTask();
   // roleMode: 'founder', 'employee', or 'intern'
   const [roleMode, setRoleMode] = useState(initialRole);
   const [memberIdInput, setMemberIdInput] = useState('');
@@ -60,7 +62,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
 
   // Data states
   const [teamMembers, setTeamMembers] = useState([]);
-  const [tasks, setTasks] = useState([]);
+  // tasks are managed via TaskProvider context
 
   // Modals for Founder/CEO staff & work management
   const [isAddingMember, setIsAddingMember] = useState(false);
@@ -357,8 +359,8 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     // Optionally persist to localStorage for fallback
     localStorage.setItem('sh_team_members', JSON.stringify(updatedMembers));
 
-    setTasks(updatedTasks);
-    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updatedTasks));
+    // Update each modified task via context
+    updatedTasks.forEach(t => updateTask(t.id, { memberName: cleanName }));
 
     const updatedAuth = { ...authenticatedMember, name: cleanName };
     setAuthenticatedMember(updatedAuth);
@@ -393,43 +395,22 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
 
   // Staff: Save work update
   const handleSaveWorkUpdate = (taskId) => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const finalCompletedDate = workUpdateForm.status === 'Completed' 
-      ? (workUpdateForm.completedDate || todayStr) 
-      : workUpdateForm.completedDate;
-
-    const updatedTasks = tasks.map((t) => {
-      if (t.id === taskId) {
-        return {
-          ...t,
-          status: workUpdateForm.status,
-          progress: Number(workUpdateForm.progress),
-          completedWorkNotes: workUpdateForm.completedWorkNotes,
-          completedDate: finalCompletedDate,
-          deliverableUrl: workUpdateForm.deliverableUrl,
-          lastUpdated: new Date().toISOString()
-        };
-      }
-      return t;
-    });
-
-    setTasks(updatedTasks);
-    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updatedTasks));
-    window.dispatchEvent(new Event('sh_tasks_updated'));
-
-    // Sync to Supabase
-    updateTaskInSupabase(taskId, {
-      status: workUpdateForm.status,
-      progress: Number(workUpdateForm.progress),
-      completedWorkNotes: workUpdateForm.completedWorkNotes,
-      completedDate: finalCompletedDate,
-      deliverableUrl: workUpdateForm.deliverableUrl
-    });
-
-    setEditingTaskId(null);
-    setUpdateSuccessMsg('Work progress successfully updated and recorded!');
-    setTimeout(() => setUpdateSuccessMsg(''), 4000);
+  // Restrict updates to only GitHub URL (deliverableUrl) and remarks (completedWorkNotes)
+  const updatedFields = {
+    deliverableUrl: workUpdateForm.deliverableUrl,
+    completedWorkNotes: workUpdateForm.completedWorkNotes,
   };
+
+  // Update Supabase with only the allowed fields
+  updateTaskInSupabase(taskId, updatedFields);
+  // Update task via context
+  updateTask(taskId, updatedFields);
+
+  window.dispatchEvent(new Event('sh_tasks_updated'));
+  setEditingTaskId(null);
+  setUpdateSuccessMsg(`Task ${taskId} updated (GitHub URL & remarks) and synced!`);
+  setTimeout(() => setUpdateSuccessMsg(''), 4000);
+};
 
   // Intern: Submit Quiz / Assessment
   const handleSubmitAssessmentQuiz = (e) => {
@@ -607,10 +588,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
       deliverableUrl: ''
     };
 
-    const updated = [newTask, ...tasks];
-    setTasks(updated);
-    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
-    saveTaskToSupabase(newTask);
+    addTask(newTask);
     window.dispatchEvent(new Event('sh_tasks_updated'));
     setIsAssigningTask(false);
     setUpdateSuccessMsg(`Work assigned to ${member.name} (${member.id}) with Date: ${newTask.assignedDate}!`);
@@ -620,34 +598,19 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
   const handleDeleteTask = (id) => {
     if (window.confirm('Delete this assigned task record?')) {
       const updated = tasks.filter(t => t.id !== id);
-      setTasks(updated);
-      localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
-      deleteTaskFromSupabase(id);
+      removeTask(id);
       window.dispatchEvent(new Event('sh_tasks_updated'));
     }
   };
 
   const handleFounderUpdateTaskStatus = (id, newStatus) => {
     const todayStr = new Date().toISOString().split('T')[0];
-    const updated = tasks.map(t => {
-      if (t.id === id) {
-        return {
-          ...t,
-          status: newStatus,
-          progress: newStatus === 'Completed' ? 100 : (t.progress || 50),
-          completedDate: newStatus === 'Completed' ? todayStr : t.completedDate
-        };
-      }
-      return t;
-    });
-
-    setTasks(updated);
-    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
-    updateTaskInSupabase(id, {
+    const updates = {
       status: newStatus,
       progress: newStatus === 'Completed' ? 100 : undefined,
       completedDate: newStatus === 'Completed' ? todayStr : undefined
-    });
+    };
+    updateTask(id, updates);
     window.dispatchEvent(new Event('sh_tasks_updated'));
   };
 
