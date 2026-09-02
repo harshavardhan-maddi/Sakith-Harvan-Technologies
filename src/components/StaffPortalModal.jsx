@@ -19,7 +19,7 @@ import {
   supabase
 } from '../lib/supabaseClient';
 
-export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', onOpenAdmin }) => {
+export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', initialUser = null, onOpenAdmin }) => {
   // roleMode: 'founder', 'employee', or 'intern'
   const [roleMode, setRoleMode] = useState(initialRole);
   const [memberIdInput, setMemberIdInput] = useState('');
@@ -103,6 +103,21 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', on
       setRoleMode(initialRole);
     }
   }, [initialRole]);
+
+  // Auto-authenticate when an initialUser is passed from AdminPortalModal
+  useEffect(() => {
+    if (isOpen && initialUser) {
+      setAuthenticatedMember(initialUser);
+      setEditNameInput(initialUser.name || '');
+      setMemberTab('dashboard');
+      if (initialUser.isExecutive || initialUser.type?.includes('Founder') || initialUser.type?.includes('CEO')) {
+        setRoleMode('founder');
+      } else {
+        setRoleMode(initialUser.type?.toLowerCase() === 'intern' ? 'intern' : 'employee');
+      }
+      setAuthError('');
+    }
+  }, [isOpen, initialUser]);
 
   // Load storage & database data when modal opens
   useEffect(() => {

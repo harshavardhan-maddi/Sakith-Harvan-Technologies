@@ -542,13 +542,13 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       setAuthenticatedUser(found);
       if (found.isExecutive || (found.type && (found.type.includes('Founder') || found.type.includes('CEO')))) {
         setAuthenticatedRole('founder');
+        setIsAuthenticated(true);
+        setAuthError('');
       } else if (found.type && found.type.toLowerCase() === 'intern') {
-        setAuthenticatedRole('intern');
+        onOpenInternLogin(found);
       } else {
-        setAuthenticatedRole('employee');
+        onOpenEmpLogin(found);
       }
-      setIsAuthenticated(true);
-      setAuthError('');
       return;
     }
 

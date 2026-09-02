@@ -27,13 +27,20 @@ export default function App() {
   // Staff Portal (Employee & Intern Login) State
   const [isStaffPortalOpen, setIsStaffPortalOpen] = useState(false);
   const [staffPortalRole, setStaffPortalRole] = useState('employee'); // 'employee' or 'intern'
+  const [staffInitialUser, setStaffInitialUser] = useState(null);
 
-  const handleOpenEmpLogin = () => {
-    setIsAdminPortalOpen(true);
+  const handleOpenEmpLogin = (user) => {
+    setIsAdminPortalOpen(false);
+    setStaffPortalRole('employee');
+    setStaffInitialUser(user);
+    setIsStaffPortalOpen(true);
   };
 
-  const handleOpenInternLogin = () => {
-    setIsAdminPortalOpen(true);
+  const handleOpenInternLogin = (user) => {
+    setIsAdminPortalOpen(false);
+    setStaffPortalRole('intern');
+    setStaffInitialUser(user);
+    setIsStaffPortalOpen(true);
   };
 
   const handleOpenFounderLogin = () => {
@@ -347,8 +354,12 @@ export default function App() {
       {/* 5. Modal Employee & Intern Work Portal */}
       <StaffPortalModal
         isOpen={isStaffPortalOpen}
-        onClose={() => setIsStaffPortalOpen(false)}
+        onClose={() => {
+          setIsStaffPortalOpen(false);
+          setStaffInitialUser(null);
+        }}
         initialRole={staffPortalRole}
+        initialUser={staffInitialUser}
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
       />
 
