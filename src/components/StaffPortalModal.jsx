@@ -354,6 +354,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     });
 
     setTeamMembers(updatedMembers);
+    // Optionally persist to localStorage for fallback
     localStorage.setItem('sh_team_members', JSON.stringify(updatedMembers));
 
     setTasks(updatedTasks);
@@ -362,9 +363,14 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     const updatedAuth = { ...authenticatedMember, name: cleanName };
     setAuthenticatedMember(updatedAuth);
 
-    // Sync to Supabase
+    // Sync member name to Supabase
     saveTeamMemberToSupabase(updatedAuth);
-
+    // Sync updated tasks' memberName to Supabase for consistency across devices
+    updatedTasks
+      .filter((t) => t.memberId === authenticatedMember.id)
+      .forEach((t) => {
+        updateTaskInSupabase(t.id, { memberName: cleanName });
+      });
     window.dispatchEvent(new Event('sh_team_updated'));
     window.dispatchEvent(new Event('sh_tasks_updated'));
 

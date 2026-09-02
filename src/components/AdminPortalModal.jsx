@@ -102,16 +102,17 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
   });
 
   // Assign Task Modal State
-  const [isAssigningTask, setIsAssigningTask] = useState(false);
-  const [taskFormData, setTaskFormData] = useState({
-    id: '',
-    memberId: '',
-    title: '',
-    description: '',
-    assignedDate: new Date().toISOString().split('T')[0],
-    dueDate: '',
-    priority: 'High'
-  });
+    const [isAssigningTask, setIsAssigningTask] = useState(false);
+    // Updated task form to support multiple member IDs for batch assignment
+    const [taskFormData, setTaskFormData] = useState({
+      id: '',
+      memberIds: [], // array of member IDs for batch assignment
+      title: '',
+      description: '',
+      assignedDate: new Date().toISOString().split('T')[0],
+      dueDate: '',
+      priority: 'High'
+    });
 
   // Filter & Search states for Team & Work tab in Admin
   const [teamTabSubFilter, setTeamTabSubFilter] = useState('tasks'); // 'tasks', 'interns', 'employees', 'batches', 'members'
@@ -674,62 +675,83 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
 
   // Task Assignment Handlers
   const handleOpenAssignTask = (prefillMemberId = '') => {
-    const defaultMember = teamMembers.find(m => m.id === prefillMemberId) || teamMembers[0] || { id: 'EMP-101' };
-    setTaskFormData({
-      id: 'TSK-' + Math.floor(1000 + Math.random() * 9000),
-      memberId: defaultMember.id,
-      title: '',
-      description: '',
-      assignedDate: new Date().toISOString().split('T')[0],
-      dueDate: '',
-      priority: 'High'
-    });
+    // Determine if assigning to a batch or single member based on UI selection (prefillMemberId could be batch ID)
+    if (prefillMemberId.startsWith('BATCH-')) {
+      // Assign to all members in the given batch
+      const batchId = prefillMemberId;
+      const batchMembers = teamMembers.filter(m => m.batch && m.batch === batchId);
+      const memberIds = batchMembers.map(m => m.id);
+      setTaskFormData({
+        id: 'TSK-' + Math.floor(1000 + Math.random() * 9000),
+        memberIds,
+        title: '',
+        description: '',
+        assignedDate: new Date().toISOString().split('T')[0],
+        dueDate: '',
+        priority: 'High'
+      });
+    } else {
+      const defaultMember = teamMembers.find(m => m.id === prefillMemberId) || teamMembers[0] || { id: 'EMP-101' };
+      setTaskFormData({
+        id: 'TSK-' + Math.floor(1000 + Math.random() * 9000),
+        memberIds: [defaultMember.id],
+        title: '',
+        description: '',
+        assignedDate: new Date().toISOString().split('T')[0],
+        dueDate: '',
+        priority: 'High'
+      });
+    }
     setIsAssigningTask(true);
   };
 
   const handleSaveAssignedTask = (e) => {
     e.preventDefault();
-    if (!taskFormData.memberId || !taskFormData.title) {
-      alert('Please select a team member and enter a task title.');
+    if (!taskFormData.memberIds.length || !taskFormData.title) {
+      alert('Please select at least one team member or batch and enter a task title.');
       return;
     }
 
-    const member = teamMembers.find(m => m.id === taskFormData.memberId) || {
-      name: 'Team Member',
-      role: 'Staff',
-      type: 'Employee'
-    };
+    // Create a task entry for each selected member ID
+    const newTasks = taskFormData.memberIds.map((mid) => {
+      const member = teamMembers.find(m => m.id === mid) || { name: 'Team Member', role: 'Staff', type: 'Employee' };
+      return {
+        id: taskFormData.id + '-' + mid,
+        memberId: mid,
+        memberName: member.name,
+        memberRole: member.role,
+        title: taskFormData.title,
+        description: taskFormData.description,
+        assignedDate: taskFormData.assignedDate || new Date().toISOString().split('T')[0],
+        dueDate: taskFormData.dueDate || '',
+        priority: taskFormData.priority || 'High',
+        status: 'Assigned',
+        progress: 0,
+        completedDate: '',
+        deliverableUrl: '',
+        completedWorkNotes: ''
+      };
+    });
 
-    const newTask = {
-      id: taskFormData.id || ('TSK-' + Date.now()),
-      memberId: taskFormData.memberId,
-      memberName: member.name,
-      memberRole: member.role,
-      title: taskFormData.title,
-      description: taskFormData.description,
-      assignedDate: taskFormData.assignedDate || new Date().toISOString().split('T')[0],
-      dueDate: taskFormData.dueDate || '',
-      priority: taskFormData.priority || 'High',
-      status: 'Assigned',
-      progress: 0,
-      completedDate: '',
-      deliverableUrl: '',
-      completedWorkNotes: ''
-    };
-
-    let updatedTasks = [];
-    if (assignedTasks.some(t => t.id === newTask.id)) {
-      updatedTasks = assignedTasks.map(t => t.id === newTask.id ? newTask : t);
-    } else {
-      updatedTasks = [newTask, ...assignedTasks];
-    }
+    // Merge with existing tasks, avoiding duplicate IDs
+    let updatedTasks = [...assignedTasks];
+    newTasks.forEach((nt) => {
+      const exists = updatedTasks.some(t => t.id === nt.id);
+      if (!exists) {
+        updatedTasks.unshift(nt);
+      } else {
+        updatedTasks = updatedTasks.map(t => t.id === nt.id ? nt : t);
+      }
+    });
 
     setAssignedTasks(updatedTasks);
     localStorage.setItem('sh_assigned_tasks', JSON.stringify(updatedTasks));
-    saveTaskToSupabase(newTask);
+    // Persist each task to Supabase
+    newTasks.forEach((t) => saveTaskToSupabase(t));
     window.dispatchEvent(new Event('sh_tasks_updated'));
     setIsAssigningTask(false);
   };
+
 
   const handleDeleteTask = (id) => {
     if (window.confirm(`Are you sure you want to delete task ${id}?`)) {
