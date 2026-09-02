@@ -333,8 +333,10 @@ export const saveTaskToSupabase = async (taskObject) => {
     } else {
       console.log('Successfully synced task to Supabase:', data);
     }
+    return data && data.length > 0 ? data[0] : null;
   } catch (err) {
     console.warn('Supabase assigned_tasks connection error:', err);
+    return null;
   }
 };
 
@@ -371,9 +373,14 @@ export const deleteTaskFromSupabase = async (id) => {
       .from('assigned_tasks')
       .delete()
       .eq('id', id);
-    if (error) console.warn('Supabase delete task error:', error.message);
+    if (error) {
+      console.warn('Supabase delete task error:', error.message);
+      return false;
+    }
+    return true;
   } catch (err) {
     console.warn('Supabase connection error:', err);
+    return false;
   }
 };
 

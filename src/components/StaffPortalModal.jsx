@@ -191,18 +191,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
       localStorage.setItem('sh_team_members', JSON.stringify(def));
     }
 
-    // 2. Assigned Tasks
-    const storedTasks = localStorage.getItem('sh_assigned_tasks');
-    if (storedTasks) {
-      try {
-        setTasks(JSON.parse(storedTasks));
-      } catch (e) {
-        setTasks(INITIAL_ASSIGNED_TASKS);
-      }
-    } else {
-      setTasks(INITIAL_ASSIGNED_TASKS);
-      localStorage.setItem('sh_assigned_tasks', JSON.stringify(INITIAL_ASSIGNED_TASKS));
-    }
+    // 2. Assigned Tasks are managed via TaskProvider context; no local storage sync needed here.
 
     // 3. Batches
     const storedBatches = localStorage.getItem('sh_intern_batches');

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase, upsertTask, deleteTask } from './supabaseClient';
+import { supabase, saveTaskToSupabase, updateTaskInSupabase, deleteTaskFromSupabase } from './supabaseClient';
 
 // Create Task Context
 const TaskContext = createContext();
@@ -43,25 +43,26 @@ export const TaskProvider = ({ children }) => {
   }, []);
 
   const addTask = async (task) => {
-    const saved = await upsertTask(task);
+    const saved = await saveTaskToSupabase(task);
     if (saved) setTasks((prev) => [saved, ...prev]);
   };
 
   const updateTask = async (id, updates) => {
-    const updated = await upsertTask({ id, ...updates });
+    const updated = await updateTaskInSupabase(id, updates);
     if (updated) {
-      setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      // Refetch tasks or update local state based on realtime; here we rely on realtime channel
+      // No direct state update needed
     }
   };
 
   const removeTask = async (id) => {
-    const success = await deleteTask(id);
+    const success = await deleteTaskFromSupabase(id);
     if (success) setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
-  return (
-    <TaskContext.Provider value={{ tasks, addTask, updateTask, removeTask }}>
-      {children}
-    </TaskContext.Provider>
+  return React.createElement(
+    TaskContext.Provider,
+    { value: { tasks, addTask, updateTask, removeTask } },
+    children
   );
 };

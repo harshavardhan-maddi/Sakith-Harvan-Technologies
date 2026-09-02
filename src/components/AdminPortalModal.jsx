@@ -17,7 +17,7 @@ import {
 } from '../data/defaultData';
 import { Logo } from './Logo';
 import { QuotationMaker } from './QuotationMaker';
-import { 
+import {
   supabase,
   fetchConsultationsFromSupabase, 
   fetchRequirementsFromSupabase, 
@@ -36,6 +36,7 @@ import {
   updateTaskInSupabase,
   deleteTaskFromSupabase
 } from '../lib/supabaseClient';
+import { useTask } from '../lib/taskStore';
 
 export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenInternLogin }) => {
   // Authentication & Unified Role State
@@ -69,7 +70,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
   const [requirements, setRequirements] = useState([]);
   const [workshops, setWorkshops] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
-  const [assignedTasks, setAssignedTasks] = useState([]);
+  const { tasks: assignedTasks, addTask, updateTask, removeTask } = useTask(); // using TaskContext
   const [batches, setBatches] = useState([]);
   const [assessments, setAssessments] = useState([]);
   const [submissions, setSubmissions] = useState([]);
@@ -190,17 +191,9 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       }
     };
 
-    const handleTaskUpdate = () => {
-      const stored = localStorage.getItem('sh_assigned_tasks');
-      if (stored) {
-        try { setAssignedTasks(JSON.parse(stored)); } catch(e) {}
-      }
-    };
+// Removed handleTaskUpdate; tasks are managed via TaskContext
 
-    window.addEventListener('sh_requirements_updated', handleReqUpdate);
-    window.addEventListener('sh_consultations_updated', handleConsultUpdate);
-    window.addEventListener('sh_team_updated', handleTeamUpdate);
-    window.addEventListener('sh_tasks_updated', handleTaskUpdate);
+// Removed sh_tasks_updated listener; real-time updates come from TaskContext
 
     // Supabase Realtime & Global Broadcast channel
     let channel = null;
@@ -267,7 +260,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       window.removeEventListener('sh_requirements_updated', handleReqUpdate);
       window.removeEventListener('sh_consultations_updated', handleConsultUpdate);
       window.removeEventListener('sh_team_updated', handleTeamUpdate);
-      window.removeEventListener('sh_tasks_updated', handleTaskUpdate);
+      // No sh_tasks_updated listener needed; TaskContext handles realtime
       if (channel) {
         try { supabase.removeChannel(channel); } catch (e) {}
       }
@@ -435,7 +428,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     setRequirements(finalRequirements);
     setWorkshops(finalWorkshops);
     setTeamMembers(finalTeam);
-    setAssignedTasks(finalTasks);
+    // Assigned tasks are now managed via TaskContext, no local set
     setBatches(finalBatches);
     setAssessments(finalAssessments);
     setSubmissions(finalSubmissions);
@@ -470,10 +463,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     });
 
     fetchTasksFromSupabase().then((dbData) => {
-      if (dbData && dbData.length > 0) {
-        setAssignedTasks(dbData);
-        localStorage.setItem('sh_assigned_tasks', JSON.stringify(dbData));
-      }
+      // Supabase tasks are synced via TaskContext; no manual state update needed
     });
   };
 
@@ -705,14 +695,14 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     setIsAssigningTask(true);
   };
 
-  const handleSaveAssignedTask = (e) => {
+  const handleSaveAssignedTask = async (e) => {
     e.preventDefault();
     if (!taskFormData.memberIds.length || !taskFormData.title) {
       alert('Please select at least one team member or batch and enter a task title.');
       return;
     }
 
-    // Create a task entry for each selected member ID
+    // Create a task entry for each selected member ID and add via TaskContext
     const newTasks = taskFormData.memberIds.map((mid) => {
       const member = teamMembers.find(m => m.id === mid) || { name: 'Team Member', role: 'Staff', type: 'Employee' };
       return {
@@ -733,33 +723,19 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       };
     });
 
-    // Merge with existing tasks, avoiding duplicate IDs
-    let updatedTasks = [...assignedTasks];
-    newTasks.forEach((nt) => {
-      const exists = updatedTasks.some(t => t.id === nt.id);
-      if (!exists) {
-        updatedTasks.unshift(nt);
-      } else {
-        updatedTasks = updatedTasks.map(t => t.id === nt.id ? nt : t);
-      }
-    });
-
-    setAssignedTasks(updatedTasks);
-    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updatedTasks));
-    // Persist each task to Supabase
-    newTasks.forEach((t) => saveTaskToSupabase(t));
-    window.dispatchEvent(new Event('sh_tasks_updated'));
+    // Add each new task using addTask (TaskContext handles deduplication and realtime)
+    for (const t of newTasks) {
+      await addTask(t);
+    }
+    // No manual state or localStorage updates needed
     setIsAssigningTask(false);
   };
 
 
-  const handleDeleteTask = (id) => {
+  const handleDeleteTask = async (id) => {
     if (window.confirm(`Are you sure you want to delete task ${id}?`)) {
-      const updated = assignedTasks.filter(t => t.id !== id);
-      setAssignedTasks(updated);
-      localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
-      deleteTaskFromSupabase(id);
-      window.dispatchEvent(new Event('sh_tasks_updated'));
+      // Use TaskContext removal
+      await removeTask(id);
     }
   };
 
@@ -795,18 +771,14 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       return t;
     });
 
-    setAssignedTasks(updatedTasks);
-    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updatedTasks));
-
-    updateTaskInSupabase(taskId, {
+    // Update task via TaskContext; it will handle Supabase sync and realtime updates
+    updateTask(taskId, {
       status: workUpdateForm.status,
       progress: Number(workUpdateForm.progress),
       completedWorkNotes: workUpdateForm.completedWorkNotes,
       completedDate: finalCompletedDate,
       deliverableUrl: workUpdateForm.deliverableUrl
     });
-
-    window.dispatchEvent(new Event('sh_tasks_updated'));
     setEditingTaskId(null);
     setUpdateSuccessMsg(`Task ${taskId} deliverable successfully updated and synced!`);
     setTimeout(() => setUpdateSuccessMsg(''), 4000);
@@ -826,15 +798,12 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       return t;
     });
 
-    setAssignedTasks(updated);
-    localStorage.setItem('sh_assigned_tasks', JSON.stringify(updated));
-    updateTaskInSupabase(id, {
+    // Update task via TaskContext
+    updateTask(id, {
       status: newStatus,
       progress: newStatus === 'Completed' ? 100 : undefined,
       completedDate: newStatus === 'Completed' ? todayStr : undefined
-    });
-    window.dispatchEvent(new Event('sh_tasks_updated'));
-  };
+    });  };
 
   // Workshop CRUD Handlers
   const handleOpenAddWorkshop = () => {
