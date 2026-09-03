@@ -25,6 +25,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
   // roleMode: 'founder', 'employee', or 'intern'
   const [roleMode, setRoleMode] = useState(initialRole);
   const [memberIdInput, setMemberIdInput] = useState('');
+  const [memberPasswordInput, setMemberPasswordInput] = useState('');
   const [authError, setAuthError] = useState('');
   const [authenticatedMember, setAuthenticatedMember] = useState(null);
 
@@ -193,13 +194,10 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
         const parsed = JSON.parse(storedMembers).filter((m) => !deletedIds.includes(m.id));
         setTeamMembers(parsed);
       } catch (e) {
-        const def = INITIAL_TEAM_MEMBERS.filter((m) => !deletedIds.includes(m.id));
-        setTeamMembers(def);
+        setTeamMembers([]);
       }
     } else {
-      const def = INITIAL_TEAM_MEMBERS.filter((m) => !deletedIds.includes(m.id));
-      setTeamMembers(def);
-      localStorage.setItem('sh_team_members', JSON.stringify(def));
+      setTeamMembers([]);
     }
 
     // 2. Assigned Tasks are managed via TaskProvider context; no local storage sync needed here.
@@ -265,9 +263,10 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     const cleanId = (memberIdInput || '').trim().toUpperCase();
 
     if (!cleanId) {
-      setAuthError('Please enter your ID or Access PIN.');
+      setAuthError('Please enter your ID.');
       return;
     }
+    const cleanPass = (memberPasswordInput || '').trim();
 
     // Check special Founder / CEO keys
     if (cleanId === 'CEO' || cleanId === 'FOUNDER' || cleanId === '2526' || cleanId === 'SAKITH2026' || cleanId === 'ADMIN') {
@@ -287,12 +286,16 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     }
 
     // Check in team members list
-    const currentMembers = teamMembers.length > 0 ? teamMembers : INITIAL_TEAM_MEMBERS;
+    const currentMembers = teamMembers;
     const found = currentMembers.find(
       (m) => m.id.toUpperCase() === cleanId
     );
 
     if (found) {
+      if (found.type?.toLowerCase() === 'intern' && cleanPass !== 'shtsa@2026') {
+        setAuthError('Incorrect password for Intern login.');
+        return;
+      }
       setAuthenticatedMember(found);
       setEditNameInput(found.name || '');
       setMemberTab('dashboard');
@@ -323,8 +326,10 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
   const handleLogout = () => {
     setAuthenticatedMember(null);
     setMemberIdInput('');
-    setEditingTaskId(null);
+    setMemberPasswordInput('');
     setAuthError('');
+    setEditingTaskId(null);
+    setUpdateSuccessMsg('');
   };
 
   // Intern / Employee: Modify Name handler
@@ -659,7 +664,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
   const memberBatchName = authenticatedMember?.batch || (authenticatedMember?.type === 'Intern' ? 'Batch 2026-Alpha (AI & ML)' : 'Core Engineering Team');
 
   // Quick select lists
-  const currentMembersList = teamMembers.length > 0 ? teamMembers : INITIAL_TEAM_MEMBERS;
+  const currentMembersList = teamMembers;
   const filteredQuickList = currentMembersList.filter((m) => {
     if (roleMode === 'founder') return m.isExecutive || m.type?.includes('Founder') || m.type?.includes('CEO');
     if (roleMode === 'intern') return m.type === 'Intern';
@@ -831,11 +836,35 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
                         setMemberIdInput(e.target.value);
                         setAuthError('');
                       }}
-                      placeholder="Enter ID or Access PIN"
+                      placeholder={roleMode === 'founder' ? "Enter ID or Access PIN" : "Enter ID"}
                       className="form-input pl-10 uppercase font-mono tracking-wider text-sm font-semibold border-white/20 focus:border-cyan-400"
                       autoFocus
                     />
                   </div>
+                </div>
+
+                {roleMode === 'intern' && (
+                  <div className="space-y-1.5 text-left pt-2">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Intern Password *
+                    </label>
+                    <div className="relative">
+                      <UserCheck className="w-4 h-4 text-amber-400 absolute left-3.5 top-3.5" />
+                      <input
+                        type="password"
+                        value={memberPasswordInput}
+                        onChange={(e) => {
+                          setMemberPasswordInput(e.target.value);
+                          setAuthError('');
+                        }}
+                        placeholder="Enter Password"
+                        className="form-input pl-10 font-mono tracking-wider text-sm font-semibold border-white/20 focus:border-amber-400"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 text-left pt-2">
                   {authError && (
                     <div className="p-2.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />

@@ -641,10 +641,11 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     setMemberFormData({
       id: `${nextPrefix}${count}`,
       name: '',
-      role: type === 'Intern' ? 'AI/ML Solutions Intern' : 'Senior Full Stack Engineer',
+      role: type === 'Intern' ? 'AI Engg Intern' : 'Senior Full Stack Engineer',
       type: type,
       email: '',
-      phone: ''
+      phone: '',
+      batch: type === 'Intern' ? 'AI Engg Intern' : 'Core Engineering Team'
     });
     setIsAddingMember(true);
   };
@@ -3457,17 +3458,33 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">Role / Designation *</label>
-                <input
-                  type="text"
-                  required
-                  value={memberFormData.role}
-                  onChange={(e) => setMemberFormData({ ...memberFormData, role: e.target.value })}
-                  placeholder="e.g. Senior Full Stack Engineer"
-                  className="form-input text-xs"
-                />
-              </div>
+              {memberFormData.type === 'Employee' ? (
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Role / Designation *</label>
+                  <input
+                    type="text"
+                    required
+                    value={memberFormData.role}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, role: e.target.value })}
+                    placeholder="e.g. Senior Full Stack Engineer"
+                    className="form-input text-xs"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <label className="block font-semibold text-slate-300 mb-1">Domain (Batch) *</label>
+                  <select
+                    required
+                    value={memberFormData.batch}
+                    onChange={(e) => setMemberFormData({ ...memberFormData, batch: e.target.value, role: e.target.value })}
+                    className="form-input text-xs"
+                  >
+                    {batches.map(b => (
+                      <option key={b.id} value={b.name}>{b.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               <div className="pt-3 flex justify-end gap-2 border-t border-white/10">
                 <button type="button" onClick={() => setIsAddingMember(false)} className="btn-secondary py-2 px-4 text-xs">
@@ -3495,17 +3512,34 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
 
             <form onSubmit={handleSaveAssignedTask} className="space-y-3 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Select Member *</label>
+                <label className="block font-semibold text-slate-300 mb-1">Select Member or Domain *</label>
                 <select
-                  value={taskFormData.memberId}
-                  onChange={(e) => setTaskFormData({ ...taskFormData, memberId: e.target.value })}
+                  value={taskFormData.memberIds.length > 1 ? `BATCH-${teamMembers.find(m => m.id === taskFormData.memberIds[0])?.batch}` : taskFormData.memberIds[0] || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.startsWith('BATCH-')) {
+                      const batchName = val.replace('BATCH-', '');
+                      const memberIds = teamMembers.filter(m => m.batch === batchName).map(m => m.id);
+                      setTaskFormData({ ...taskFormData, memberIds });
+                    } else {
+                      setTaskFormData({ ...taskFormData, memberIds: [val] });
+                    }
+                  }}
                   className="form-input text-xs"
                 >
-                  {teamMembers.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      [{m.id}] {m.name} — {m.role} ({m.type})
-                    </option>
-                  ))}
+                  <option value="" disabled>-- Select Domain or Member --</option>
+                  <optgroup label="By Domain (Batch)">
+                    {batches.map(b => (
+                      <option key={b.id} value={`BATCH-${b.name}`}>All in {b.name}</option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Individual Members">
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        [{m.id}] {m.name} — {m.role} ({m.type})
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 

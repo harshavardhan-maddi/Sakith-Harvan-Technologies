@@ -650,22 +650,31 @@ export const INITIAL_TEAM_MEMBERS = [
 
 export const INITIAL_BATCHES = [
   {
-    id: "BATCH-01",
-    name: "Batch 2026-Alpha (AI & ML)",
-    focus: "Agentic AI, LLM Fine-Tuning & Computer Vision",
+    id: "DOMAIN-AI",
+    name: "AI Engg Intern",
+    focus: "Agentic AI, Machine Learning, LLMs",
     startDate: "2026-08-01",
     mentor: "Maddi Harshavardhan",
-    memberIds: ["INT-201", "INT-202"],
-    description: "Intensive cohort focusing on Agentic AI, Google Gemini API, LangChain pipelines, and high-impact SaaS development."
+    memberIds: [],
+    description: "Cohort focusing on Agentic AI, ML workflows, and AI Engineering."
   },
   {
-    id: "BATCH-02",
-    name: "Batch 2026-Beta (FullStack & Cloud)",
-    focus: "React 18, Tailwind CSS, Supabase & AWS Serverless",
-    startDate: "2026-08-10",
+    id: "DOMAIN-FE",
+    name: "Frontend Engineer",
+    focus: "React, Tailwind, UI/UX",
+    startDate: "2026-08-01",
     mentor: "Thoka Sai Krishna",
-    memberIds: ["INT-203", "INT-204"],
-    description: "Cohort dedicated to scalable frontend microservices, cloud deployments, PWA architecture, and Supabase database modeling."
+    memberIds: [],
+    description: "Cohort dedicated to responsive frontend architecture and seamless user experiences."
+  },
+  {
+    id: "DOMAIN-FSD",
+    name: "FSD with AI",
+    focus: "Full Stack Development infused with AI capabilities",
+    startDate: "2026-08-01",
+    mentor: "Maddi Harshavardhan",
+    memberIds: [],
+    description: "Comprehensive full stack cohort integrating AI tools into modern web applications."
   }
 ];
 
