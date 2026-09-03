@@ -22,8 +22,9 @@ export const TaskProvider = ({ children }) => {
 
   // Subscribe to realtime changes
   useEffect(() => {
+    const channelId = `public:assigned_tasks_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const channel = supabase
-      .channel('public:assigned_tasks')
+      .channel(channelId)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'assigned_tasks' }, (payload) => {
         const newTask = payload.new;
         setTasks((prev) => {
