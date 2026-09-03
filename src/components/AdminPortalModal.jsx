@@ -524,22 +524,21 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       return;
     }
 
-    // 3. Match against Team Members Directory (Employees, Interns, Founders)
+    // 3. Match against Team Members Directory for Founders ONLY
     const currentMembers = teamMembers;
     const found = currentMembers.find(m => (m.id || '').trim().toUpperCase() === cleanId);
 
     if (found) {
-      setAuthenticatedUser(found);
       if (found.isExecutive || (found.type && (found.type.includes('Founder') || found.type.includes('CEO')))) {
+        setAuthenticatedUser(found);
         setAuthenticatedRole('founder');
         setIsAuthenticated(true);
         setAuthError('');
-      } else if (found.type && found.type.toLowerCase() === 'intern') {
-        onOpenInternLogin(found);
+        return;
       } else {
-        onOpenEmpLogin(found);
+        setAuthError('Unauthorized: Employees and Interns must log in via the Staff Portal.');
+        return;
       }
-      return;
     }
 
     // 4. Not recognized

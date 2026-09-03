@@ -281,9 +281,16 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     );
 
     if (found) {
-      if (found.type?.toLowerCase() === 'intern' && cleanPass !== 'shtsa@2026') {
-        setAuthError('Incorrect password for Intern login.');
-        return;
+      if (found.type?.toLowerCase() === 'intern') {
+        if (roleMode !== 'intern') {
+          setRoleMode('intern');
+          setAuthError('Please enter your intern password to continue.');
+          return;
+        }
+        if (cleanPass !== 'shtsa@2026') {
+          setAuthError('Incorrect password for Intern login.');
+          return;
+        }
       }
       setAuthenticatedMember(found);
       setEditNameInput(found.name || '');
