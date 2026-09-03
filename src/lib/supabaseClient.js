@@ -477,9 +477,6 @@ export const fetchSubmissionsFromSupabase = async () => {
   return null;
 };
 
-  return null;
-};
-
 // Global subscription for real-time team member broadcasts
 staffUpdatesChannel
   .on('broadcast', { event: 'MEMBER_CREATED' }, async () => {
