@@ -46,6 +46,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
   
   // Single Input state for unified login
   const [authInput, setAuthInput] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
   const [authError, setAuthError] = useState('');
   const [activeTab, setActiveTab] = useState('overview'); // For Admin dashboard tabs: 'overview', 'quotation_maker', 'consultations', 'requirements', 'team_work', 'workshops', 'settings'
 
@@ -502,16 +503,18 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     setAuthError('');
     const raw = explicitId !== null ? explicitId : authInput;
     const cleanId = (raw || '').trim().toUpperCase();
+    const cleanPass = (authPassword || '').trim();
 
     if (!cleanId) {
-      setAuthError('Please enter your ID or Access PIN.');
+      setAuthError('Please enter your User ID.');
       return;
     }
 
     const storedPin = (localStorage.getItem('sh_admin_pin') || '2526').trim().toUpperCase();
 
-    // 1. Check Executive Admin PIN or Admin ID
+    // 1. Check Executive Admin Credentials
     if (
+      (cleanId === 'SHTSA@2026' && cleanPass === '2526@shstsa') ||
       cleanId === storedPin || 
       cleanId === '2526' || 
       cleanId === 'SAKITH2026' || 
@@ -570,7 +573,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     }
 
     // 4. Not recognized
-    setAuthError(`ID or PIN "${cleanId}" not recognized. Please check your assigned ID or Access PIN.`);
+    setAuthError(`ID or PIN "${cleanId}" not recognized or incorrect password.`);
   };
 
   const handleLogout = () => {
@@ -578,6 +581,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     setAuthenticatedRole(null);
     setAuthenticatedUser(null);
     setAuthInput('');
+    setAuthPassword('');
     setAuthError('');
     setEditingTaskId(null);
     setUpdateSuccessMsg('');
@@ -1115,7 +1119,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                     Employee / Intern / Founder ID or Admin Access PIN *
                   </label>
                   <div className="relative">
-                    <KeyRound className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" />
+                    <UserCheck className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" />
                     <input
                       type="text"
                       value={authInput}
@@ -1123,11 +1127,33 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
                         setAuthInput(e.target.value);
                         setAuthError('');
                       }}
-                      placeholder="Enter ID or Access PIN"
-                      className="form-input pl-10 uppercase font-mono text-center tracking-wider text-sm sm:text-base font-bold border-red-500/40 focus:border-cyan-400 bg-slate-950/80"
+                      placeholder="Enter ID (e.g. shtsa@2026)"
+                      className="form-input pl-10 font-mono text-center tracking-wider text-sm sm:text-base font-bold border-red-500/40 focus:border-cyan-400 bg-slate-950/80"
                       autoFocus
                     />
                   </div>
+                </div>
+                
+                <div className="space-y-1.5 text-left">
+                  <label className="block text-xs font-bold text-slate-200">
+                    Password (Optional for Interns/Staff)
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="w-4 h-4 text-rose-400 absolute left-3.5 top-3.5" />
+                    <input
+                      type="password"
+                      value={authPassword}
+                      onChange={(e) => {
+                        setAuthPassword(e.target.value);
+                        setAuthError('');
+                      }}
+                      placeholder="Enter Password"
+                      className="form-input pl-10 font-mono text-center tracking-wider text-sm sm:text-base font-bold border-red-500/40 focus:border-rose-400 bg-slate-950/80"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5 text-left pt-2">
                   {authError && (
                     <div className="p-3 rounded-xl bg-red-950/80 border border-red-500/50 text-red-300 text-xs flex items-center gap-2 animate-in fade-in">
                       <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
