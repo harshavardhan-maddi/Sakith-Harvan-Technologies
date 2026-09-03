@@ -524,21 +524,27 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       return;
     }
 
-    // 3. Match against Team Members Directory for Founders ONLY
+    // 3. Match against Team Members Directory (Unified Login)
     const currentMembers = teamMembers;
     const found = currentMembers.find(m => (m.id || '').trim().toUpperCase() === cleanId);
 
     if (found) {
+      if (found.type?.toLowerCase() === 'intern' && cleanPass !== 'shtsa@2026') {
+        setAuthError('Incorrect password for Intern login.');
+        return;
+      }
+
+      setAuthenticatedUser(found);
       if (found.isExecutive || (found.type && (found.type.includes('Founder') || found.type.includes('CEO')))) {
-        setAuthenticatedUser(found);
         setAuthenticatedRole('founder');
         setIsAuthenticated(true);
         setAuthError('');
-        return;
+      } else if (found.type && found.type.toLowerCase() === 'intern') {
+        onOpenInternLogin(found);
       } else {
-        setAuthError('Unauthorized: Employees and Interns must log in via the Staff Portal.');
-        return;
+        onOpenEmpLogin(found);
       }
+      return;
     }
 
     // 4. Not recognized
