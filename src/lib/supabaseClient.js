@@ -6,7 +6,6 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export const staffUpdatesChannel = supabase.channel('staff_updates_channel');
-staffUpdatesChannel.subscribe();
 
 /* =================================================================== */
 /* SUPABASE CONSULTATIONS HELPERS                                      */
@@ -478,4 +477,30 @@ export const fetchSubmissionsFromSupabase = async () => {
   return null;
 };
 
+  return null;
+};
 
+// Global subscription for real-time team member broadcasts
+staffUpdatesChannel
+  .on('broadcast', { event: 'MEMBER_CREATED' }, async () => {
+    const dbMembers = await fetchTeamMembersFromSupabase();
+    if (dbMembers) {
+      localStorage.setItem('sh_team_members', JSON.stringify(dbMembers));
+      window.dispatchEvent(new Event('sh_team_updated'));
+    }
+  })
+  .on('broadcast', { event: 'MEMBER_DELETED' }, async () => {
+    const dbMembers = await fetchTeamMembersFromSupabase();
+    if (dbMembers) {
+      localStorage.setItem('sh_team_members', JSON.stringify(dbMembers));
+      window.dispatchEvent(new Event('sh_team_updated'));
+    }
+  })
+  .on('broadcast', { event: 'MEMBER_UPDATED' }, async () => {
+    const dbMembers = await fetchTeamMembersFromSupabase();
+    if (dbMembers) {
+      localStorage.setItem('sh_team_members', JSON.stringify(dbMembers));
+      window.dispatchEvent(new Event('sh_team_updated'));
+    }
+  })
+  .subscribe();

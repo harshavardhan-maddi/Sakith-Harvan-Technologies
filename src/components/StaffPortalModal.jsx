@@ -138,8 +138,8 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     window.addEventListener('sh_team_updated', handleTasksUpdate);
     window.addEventListener('sh_batches_updated', handleTasksUpdate);
 
-    // Supabase realtime subscription & global broadcast channel
-    let broadcastChannel = null;
+    // Supabase realtime subscription
+    let channel = null;
     try {
       const channelId = `staff_portal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       channel = supabase
@@ -159,14 +159,6 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
           }
         )
         .subscribe();
-
-      // Listen for explicit broadcast events since realtime might be off
-      broadcastChannel = supabase
-        .channel('staff_updates_channel')
-        .on('broadcast', { event: 'MEMBER_CREATED' }, () => loadData())
-        .on('broadcast', { event: 'MEMBER_DELETED' }, () => loadData())
-        .on('broadcast', { event: 'MEMBER_UPDATED' }, () => loadData())
-        .subscribe();
     } catch (e) {
       console.warn('Realtime subscription error in StaffPortalModal:', e);
     }
@@ -177,9 +169,6 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
       window.removeEventListener('sh_batches_updated', handleTasksUpdate);
       if (channel) {
         try { supabase.removeChannel(channel); } catch (e) {}
-      }
-      if (broadcastChannel) {
-        try { supabase.removeChannel(broadcastChannel); } catch (e) {}
       }
     };
   }, [authenticatedMember]);
