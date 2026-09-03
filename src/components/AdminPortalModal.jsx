@@ -197,6 +197,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
 
     // Supabase Realtime & Global Broadcast channel
     let channel = null;
+    let broadcastChannel = null;
     try {
       const channelId = `admin_portal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       channel = supabase
@@ -242,15 +243,38 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
           { event: '*', schema: 'public', table: 'team_members' },
           () => {
             fetchTeamMembersFromSupabase().then((dbMembers) => {
-              if (dbMembers && dbMembers.length > 0) {
-                const deletedIds = JSON.parse(localStorage.getItem('sh_deleted_members') || '[]');
-                const filtered = dbMembers.filter((m) => !deletedIds.includes(m.id));
-                setTeamMembers(filtered);
-                localStorage.setItem('sh_team_members', JSON.stringify(filtered));
-              }
+              const dbArr = dbMembers || [];
+              setTeamMembers(dbArr);
+              localStorage.setItem('sh_team_members', JSON.stringify(dbArr));
             });
           }
         )
+        .subscribe();
+        
+      // Listen for explicit broadcast events
+      broadcastChannel = supabase
+        .channel('staff_updates_channel')
+        .on('broadcast', { event: 'MEMBER_CREATED' }, () => {
+          fetchTeamMembersFromSupabase().then((dbMembers) => {
+            const dbArr = dbMembers || [];
+            setTeamMembers(dbArr);
+            localStorage.setItem('sh_team_members', JSON.stringify(dbArr));
+          });
+        })
+        .on('broadcast', { event: 'MEMBER_DELETED' }, () => {
+          fetchTeamMembersFromSupabase().then((dbMembers) => {
+            const dbArr = dbMembers || [];
+            setTeamMembers(dbArr);
+            localStorage.setItem('sh_team_members', JSON.stringify(dbArr));
+          });
+        })
+        .on('broadcast', { event: 'MEMBER_UPDATED' }, () => {
+          fetchTeamMembersFromSupabase().then((dbMembers) => {
+            const dbArr = dbMembers || [];
+            setTeamMembers(dbArr);
+            localStorage.setItem('sh_team_members', JSON.stringify(dbArr));
+          });
+        })
         .subscribe();
     } catch (e) {
       console.warn('Realtime subscription error:', e);
@@ -260,9 +284,11 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
       window.removeEventListener('sh_requirements_updated', handleReqUpdate);
       window.removeEventListener('sh_consultations_updated', handleConsultUpdate);
       window.removeEventListener('sh_team_updated', handleTeamUpdate);
-      // No sh_tasks_updated listener needed; TaskContext handles realtime
       if (channel) {
         try { supabase.removeChannel(channel); } catch (e) {}
+      }
+      if (broadcastChannel) {
+        try { supabase.removeChannel(broadcastChannel); } catch (e) {}
       }
     };
   }, []);

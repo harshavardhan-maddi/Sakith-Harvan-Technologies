@@ -227,8 +227,7 @@ export const saveTeamMemberToSupabase = async (memberObject) => {
 
   // Broadcast to all connected devices instantly
   try {
-    const channelId = `broadcast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const channel = supabase.channel(channelId);
+    const channel = supabase.channel('staff_updates_channel');
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         channel.send({
@@ -280,8 +279,7 @@ export const deleteTeamMemberFromSupabase = async (id) => {
 
   // Broadcast deletion to all connected devices instantly
   try {
-    const channelId = `broadcast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const channel = supabase.channel(channelId);
+    const channel = supabase.channel('staff_updates_channel');
     channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         channel.send({

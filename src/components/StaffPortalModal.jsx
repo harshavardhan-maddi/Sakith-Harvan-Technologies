@@ -138,7 +138,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
     window.addEventListener('sh_batches_updated', handleTasksUpdate);
 
     // Supabase realtime subscription & global broadcast channel
-    let channel = null;
+    let broadcastChannel = null;
     try {
       const channelId = `staff_portal_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       channel = supabase
@@ -158,6 +158,14 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
           }
         )
         .subscribe();
+
+      // Listen for explicit broadcast events since realtime might be off
+      broadcastChannel = supabase
+        .channel('staff_updates_channel')
+        .on('broadcast', { event: 'MEMBER_CREATED' }, () => loadData())
+        .on('broadcast', { event: 'MEMBER_DELETED' }, () => loadData())
+        .on('broadcast', { event: 'MEMBER_UPDATED' }, () => loadData())
+        .subscribe();
     } catch (e) {
       console.warn('Realtime subscription error in StaffPortalModal:', e);
     }
@@ -168,6 +176,9 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
       window.removeEventListener('sh_batches_updated', handleTasksUpdate);
       if (channel) {
         try { supabase.removeChannel(channel); } catch (e) {}
+      }
+      if (broadcastChannel) {
+        try { supabase.removeChannel(broadcastChannel); } catch (e) {}
       }
     };
   }, [authenticatedMember]);
@@ -234,10 +245,9 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
 
     // Cloud fetch
     fetchTeamMembersFromSupabase().then((dbMembers) => {
-      if (dbMembers && dbMembers.length > 0) {
-        setTeamMembers(dbMembers);
-        localStorage.setItem('sh_team_members', JSON.stringify(dbMembers));
-      }
+      const dbArr = dbMembers || [];
+      setTeamMembers(dbArr);
+      localStorage.setItem('sh_team_members', JSON.stringify(dbArr));
     });
 
     fetchTasksFromSupabase().then((dbTasks) => {
