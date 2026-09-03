@@ -384,13 +384,13 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     const rawTeam = localStorage.getItem('sh_team_members');
     let finalTeam;
     if (rawTeam === null) {
-      finalTeam = INITIAL_TEAM_MEMBERS.filter((m) => !deletedIds.includes(m.id));
+      finalTeam = [];
       localStorage.setItem('sh_team_members', JSON.stringify(finalTeam));
     } else {
       try {
         finalTeam = JSON.parse(rawTeam).filter((m) => !deletedIds.includes(m.id));
       } catch (e) {
-        finalTeam = INITIAL_TEAM_MEMBERS.filter((m) => !deletedIds.includes(m.id));
+        finalTeam = [].filter((m) => !deletedIds.includes(m.id));
       }
     }
 
@@ -536,7 +536,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     // 2. Check Founder / CEO generic shortcuts
     if (cleanId === 'CEO' || cleanId === 'FOUNDER' || cleanId === 'MH' || cleanId === 'SK') {
       const targetId = cleanId === 'SK' ? 'FOUNDER-02' : 'CEO-01';
-      const currentMembers = teamMembers.length > 0 ? teamMembers : INITIAL_TEAM_MEMBERS;
+    const currentMembers = teamMembers;
       const founderUser = currentMembers.find(m => (m.id || '').toUpperCase() === targetId) || {
         id: 'CEO-01',
         name: 'Maddi Harshavardhan',
@@ -552,7 +552,7 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
     }
 
     // 3. Match against Team Members Directory (Employees, Interns, Founders)
-    const currentMembers = teamMembers.length > 0 ? teamMembers : INITIAL_TEAM_MEMBERS;
+    const currentMembers = teamMembers;
     const found = currentMembers.find(m => (m.id || '').trim().toUpperCase() === cleanId);
 
     if (found) {

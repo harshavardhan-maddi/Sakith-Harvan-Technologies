@@ -213,9 +213,21 @@ export const deleteWorkshopFromSupabase = async (id) => {
 /* =================================================================== */
 export const saveTeamMemberToSupabase = async (memberObject) => {
   try {
+    // Only pass the columns that exist in the Supabase schema to prevent 400 Bad Request errors
+    const sanitizedMember = {
+      id: memberObject.id,
+      name: memberObject.name,
+      role: memberObject.role,
+      type: memberObject.type,
+      email: memberObject.email,
+      phone: memberObject.phone,
+      joinedDate: memberObject.joinedDate,
+      status: memberObject.status || 'Active'
+    };
+
     const { data, error } = await supabase
       .from('team_members')
-      .upsert([memberObject], { onConflict: 'id' });
+      .upsert([sanitizedMember], { onConflict: 'id' });
     if (error) {
       console.warn('Supabase team_members upsert warning:', error.message);
     } else {
