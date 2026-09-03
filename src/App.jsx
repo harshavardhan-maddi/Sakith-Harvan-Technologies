@@ -94,6 +94,7 @@ export default function App() {
   };
 
   return (
+    <TaskProvider>
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-blue-600 selection:text-white flex flex-col font-sans">
       {/* Brand Intro Splash Animation */}
       {showSplash && <IntroSplash onFinish={() => setShowSplash(false)} />}
@@ -383,6 +384,7 @@ export default function App() {
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
       />
     </div>
+  </TaskProvider>
   );
 }
 

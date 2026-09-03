@@ -60,9 +60,11 @@ export const TaskProvider = ({ children }) => {
     if (success) setTasks((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // Helper to replace entire task list (used for bulk sync)
+  const setAllTasks = (newTasks) => setTasks(newTasks);
   return React.createElement(
     TaskContext.Provider,
-    { value: { tasks, addTask, updateTask, removeTask } },
+    { value: { tasks, addTask, updateTask, removeTask, setAllTasks } },
     children
   );
 };

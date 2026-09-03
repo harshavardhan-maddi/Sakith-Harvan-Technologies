@@ -21,7 +21,7 @@ import {
 import { useTask } from '../lib/taskStore';
 
 export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', initialUser = null, onOpenAdmin }) => {
-  const { tasks, addTask, updateTask, removeTask } = useTask();
+  const { tasks, addTask, updateTask, removeTask, setAllTasks } = useTask();
   // roleMode: 'founder', 'employee', or 'intern'
   const [roleMode, setRoleMode] = useState(initialRole);
   const [memberIdInput, setMemberIdInput] = useState('');
@@ -242,7 +242,7 @@ export const StaffPortalModal = ({ isOpen, onClose, initialRole = 'employee', in
 
     fetchTasksFromSupabase().then((dbTasks) => {
       if (dbTasks && dbTasks.length > 0) {
-        setTasks(dbTasks);
+        setAllTasks(dbTasks);
         localStorage.setItem('sh_assigned_tasks', JSON.stringify(dbTasks));
       }
     });
