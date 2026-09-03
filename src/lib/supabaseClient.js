@@ -5,6 +5,9 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIU
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+export const staffUpdatesChannel = supabase.channel('staff_updates_channel');
+staffUpdatesChannel.subscribe();
+
 /* =================================================================== */
 /* SUPABASE CONSULTATIONS HELPERS                                      */
 /* =================================================================== */
@@ -239,18 +242,10 @@ export const saveTeamMemberToSupabase = async (memberObject) => {
 
   // Broadcast to all connected devices instantly
   try {
-    const channel = supabase.channel('staff_updates_channel');
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        channel.send({
-          type: 'broadcast',
-          event: 'MEMBER_CREATED',
-          payload: memberObject
-        });
-        setTimeout(() => {
-          try { supabase.removeChannel(channel); } catch(e) {}
-        }, 1000);
-      }
+    staffUpdatesChannel.send({
+      type: 'broadcast',
+      event: 'MEMBER_CREATED',
+      payload: memberObject
     });
   } catch (e) {
     console.warn('Broadcast error:', e);
@@ -291,18 +286,10 @@ export const deleteTeamMemberFromSupabase = async (id) => {
 
   // Broadcast deletion to all connected devices instantly
   try {
-    const channel = supabase.channel('staff_updates_channel');
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        channel.send({
-          type: 'broadcast',
-          event: 'MEMBER_DELETED',
-          payload: { id }
-        });
-        setTimeout(() => {
-          try { supabase.removeChannel(channel); } catch(e) {}
-        }, 1000);
-      }
+    staffUpdatesChannel.send({
+      type: 'broadcast',
+      event: 'MEMBER_DELETED',
+      payload: { id }
     });
   } catch (e) {
     console.warn('Broadcast error:', e);
@@ -311,19 +298,10 @@ export const deleteTeamMemberFromSupabase = async (id) => {
 
 export const broadcastStaffUpdate = (event, payload) => {
   try {
-    const channelId = `broadcast_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    const channel = supabase.channel(channelId);
-    channel.subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
-        channel.send({
-          type: 'broadcast',
-          event: event,
-          payload: payload
-        });
-        setTimeout(() => {
-          try { supabase.removeChannel(channel); } catch(e) {}
-        }, 1000);
-      }
+    staffUpdatesChannel.send({
+      type: 'broadcast',
+      event: event,
+      payload: payload
     });
   } catch (e) {
     console.warn('Broadcast error:', e);
