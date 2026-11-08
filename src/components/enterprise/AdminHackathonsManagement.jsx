@@ -11,8 +11,12 @@ import {
   getStoredHackathonRegistrations, 
   saveStoredHackathonRegistrations,
   exportHackathonTeamsToExcel,
-  formatHackathonLogoUrl
+  formatHackathonLogoUrl,
+  syncHackathonsFromSupabase,
+  syncHackathonRegistrationsFromSupabase,
+  deleteHackathon
 } from '../../lib/hackathonStore';
+import { supabase } from '../../lib/supabaseClient';
 
 export const AdminHackathonsManagement = () => {
   const [hackathons, setHackathons] = useState(() => getStoredHackathons());
@@ -78,17 +82,59 @@ export const AdminHackathonsManagement = () => {
   const [teamSearchQuery, setTeamSearchQuery] = useState('');
   const [successToast, setSuccessToast] = useState('');
 
-  // Sync listener
+  // Multi-device sync: local listeners + Supabase PostgreSQL Realtime channel
   useEffect(() => {
+    // 1. Initial background fetch from Supabase
+    syncHackathonsFromSupabase().then((hList) => {
+      if (hList && Array.isArray(hList)) setHackathons(hList);
+    });
+    syncHackathonRegistrationsFromSupabase().then((rList) => {
+      if (rList && Array.isArray(rList)) setRegistrations(rList);
+    });
+
+    // 2. Local storage event sync
     const handleUpdate = () => {
       setHackathons(getStoredHackathons());
       setRegistrations(getStoredHackathonRegistrations());
     };
     window.addEventListener('sh_hackathons_updated', handleUpdate);
     window.addEventListener('sh_hackathon_registrations_updated', handleUpdate);
+
+    // 3. Supabase Realtime multi-device subscription
+    let channel = null;
+    try {
+      const channelId = `admin_hackathons_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      channel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'hackathons' },
+          () => {
+            syncHackathonsFromSupabase().then((hList) => {
+              if (hList && Array.isArray(hList)) setHackathons(hList);
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'hackathon_registrations' },
+          () => {
+            syncHackathonRegistrationsFromSupabase().then((rList) => {
+              if (rList && Array.isArray(rList)) setRegistrations(rList);
+            });
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription error on admin hackathons:', e);
+    }
+
     return () => {
       window.removeEventListener('sh_hackathons_updated', handleUpdate);
       window.removeEventListener('sh_hackathon_registrations_updated', handleUpdate);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch (e) {}
+      }
     };
   }, []);
 
@@ -214,6 +260,7 @@ export const AdminHackathonsManagement = () => {
 
     const updatedHackathons = hackathons.filter(h => h.id !== hckId);
     saveStoredHackathons(updatedHackathons);
+    deleteHackathon(hckId);
     setHackathons(updatedHackathons);
 
     // Also remove registrations associated with this hackathon

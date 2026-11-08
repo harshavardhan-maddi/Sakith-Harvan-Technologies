@@ -199,10 +199,10 @@ export const deleteStoredDomain = (domainName) => {
 export const syncInternshipsFromSupabase = async () => {
   try {
     const cloudData = await fetchInternshipsFromSupabase();
-    if (cloudData && Array.isArray(cloudData) && cloudData.length > 0) {
+    if (cloudData && Array.isArray(cloudData)) {
       saveStoredInternships(cloudData);
       const domains = Array.from(new Set(cloudData.map(i => i.domain).filter(Boolean)));
-      if (domains.length > 0) saveStoredDomains(domains);
+      saveStoredDomains(domains);
       window.dispatchEvent(new Event('sh_internships_updated'));
       return cloudData;
     }
@@ -216,7 +216,7 @@ export const syncInternshipsFromSupabase = async () => {
 export const syncDomainsFromSupabase = async () => {
   try {
     const cloudDomains = await fetchDomainsFromSupabase();
-    if (cloudDomains && Array.isArray(cloudDomains) && cloudDomains.length > 0) {
+    if (cloudDomains && Array.isArray(cloudDomains)) {
       saveStoredDomains(cloudDomains);
       return cloudDomains;
     }
@@ -230,7 +230,7 @@ export const syncDomainsFromSupabase = async () => {
 export const syncApplicationsFromSupabase = async () => {
   try {
     const cloudApps = await fetchInternshipApplicationsFromSupabase();
-    if (cloudApps && Array.isArray(cloudApps) && cloudApps.length > 0) {
+    if (cloudApps && Array.isArray(cloudApps)) {
       saveStoredApplications(cloudApps);
       window.dispatchEvent(new Event('sh_applications_updated'));
       return cloudApps;

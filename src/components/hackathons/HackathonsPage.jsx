@@ -6,8 +6,11 @@ import {
 } from 'lucide-react';
 import { 
   getStoredHackathons, 
-  getStoredHackathonRegistrations 
+  getStoredHackathonRegistrations,
+  syncHackathonsFromSupabase,
+  syncHackathonRegistrationsFromSupabase
 } from '../../lib/hackathonStore';
+import { supabase } from '../../lib/supabaseClient';
 import { HackathonEmptyStateCard } from './HackathonEmptyStateCard';
 import { HackathonDetailsModal } from './HackathonDetailsModal';
 import { HackathonRegistrationModal } from './HackathonRegistrationModal';
@@ -27,17 +30,59 @@ export const HackathonsPage = ({ onOpenRequirement, onOpenConsultation }) => {
   const [workspaceInitialTeam, setWorkspaceInitialTeam] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Storage listener for realtime sync
+  // Multi-device sync: local listeners + Supabase PostgreSQL Realtime channel
   useEffect(() => {
+    // 1. Initial background fetch from Supabase
+    syncHackathonsFromSupabase().then((hList) => {
+      if (hList && Array.isArray(hList)) setHackathons(hList);
+    });
+    syncHackathonRegistrationsFromSupabase().then((rList) => {
+      if (rList && Array.isArray(rList)) setRegistrations(rList);
+    });
+
+    // 2. Local storage event sync
     const handleSync = () => {
       setHackathons(getStoredHackathons());
       setRegistrations(getStoredHackathonRegistrations());
     };
     window.addEventListener('sh_hackathons_updated', handleSync);
     window.addEventListener('sh_hackathon_registrations_updated', handleSync);
+
+    // 3. Supabase Realtime multi-device subscription
+    let channel = null;
+    try {
+      const channelId = `hackathons_public_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      channel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'hackathons' },
+          () => {
+            syncHackathonsFromSupabase().then((hList) => {
+              if (hList && Array.isArray(hList)) setHackathons(hList);
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'hackathon_registrations' },
+          () => {
+            syncHackathonRegistrationsFromSupabase().then((rList) => {
+              if (rList && Array.isArray(rList)) setRegistrations(rList);
+            });
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription error on hackathons:', e);
+    }
+
     return () => {
       window.removeEventListener('sh_hackathons_updated', handleSync);
       window.removeEventListener('sh_hackathon_registrations_updated', handleSync);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch (e) {}
+      }
     };
   }, []);
 

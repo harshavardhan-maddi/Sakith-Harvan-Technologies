@@ -24,6 +24,7 @@ import {
   saveStoredTimelineSettings,
   isApplicationDeadlineCrossed
 } from '../../lib/internshipStore';
+import { supabase } from '../../lib/supabaseClient';
 
 export const AdminInternshipsManagement = () => {
   const [internships, setInternships] = useState([]);
@@ -83,9 +84,45 @@ export const AdminInternshipsManagement = () => {
 
     window.addEventListener('sh_internships_updated', handleUpdate);
     window.addEventListener('sh_applications_updated', handleUpdate);
+
+    // Supabase Realtime multi-device subscription
+    let channel = null;
+    try {
+      const channelId = `admin_internships_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      channel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'internships' },
+          () => {
+            loadData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'internship_domains' },
+          () => {
+            loadData();
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'internship_applications' },
+          () => {
+            loadData();
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription error:', e);
+    }
+
     return () => {
       window.removeEventListener('sh_internships_updated', handleUpdate);
       window.removeEventListener('sh_applications_updated', handleUpdate);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch (e) {}
+      }
     };
   }, []);
 

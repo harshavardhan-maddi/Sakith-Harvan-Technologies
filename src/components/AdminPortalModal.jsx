@@ -239,26 +239,26 @@ export const AdminPortalModal = ({ isOpen, onClose, onOpenEmpLogin, onOpenIntern
         .channel(channelId)
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'requirements' },
-          (payload) => {
-            if (payload.new) {
-              setRequirements((prev) => {
-                if (prev.some(item => item.id === payload.new.id)) return prev;
-                return [payload.new, ...prev];
-              });
-            }
+          { event: '*', schema: 'public', table: 'requirements' },
+          () => {
+            fetchRequirementsFromSupabase().then((dbData) => {
+              if (dbData && Array.isArray(dbData)) {
+                setRequirements(dbData);
+                localStorage.setItem('sh_requirements', JSON.stringify(dbData));
+              }
+            });
           }
         )
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'consultations' },
-          (payload) => {
-            if (payload.new) {
-              setConsultations((prev) => {
-                if (prev.some(item => item.id === payload.new.id)) return prev;
-                return [payload.new, ...prev];
-              });
-            }
+          { event: '*', schema: 'public', table: 'consultations' },
+          () => {
+            fetchConsultationsFromSupabase().then((dbData) => {
+              if (dbData && Array.isArray(dbData)) {
+                setConsultations(dbData);
+                localStorage.setItem('sh_consultations', JSON.stringify(dbData));
+              }
+            });
           }
         )
         .on(

@@ -1,4 +1,12 @@
 // Sakith Harvan Technologies - Hackathon Store & Engine
+import {
+  fetchHackathonsFromSupabase,
+  saveHackathonToSupabase,
+  deleteHackathonFromSupabase,
+  fetchHackathonRegistrationsFromSupabase,
+  saveHackathonRegistrationToSupabase,
+  deleteHackathonRegistrationFromSupabase
+} from './supabaseClient';
 
 const STORAGE_KEYS = {
   HACKATHONS: 'sh_hackathons_data',
@@ -214,14 +222,62 @@ export const getStoredHackathons = () => {
   }
 };
 
-// Helper to save stored hackathons
+// Background Sync from Supabase PostgreSQL Database
+export const syncHackathonsFromSupabase = async () => {
+  try {
+    const cloudHackathons = await fetchHackathonsFromSupabase();
+    if (cloudHackathons && Array.isArray(cloudHackathons)) {
+      if (cloudHackathons.length === 0) {
+        // If Supabase table is fresh/empty, seed initial hackathons so all devices have them
+        const local = getStoredHackathons();
+        if (local && local.length > 0) {
+          for (const h of local) {
+            saveHackathonToSupabase(h).catch(() => {});
+          }
+          return local;
+        }
+      }
+      localStorage.setItem(STORAGE_KEYS.HACKATHONS, JSON.stringify(cloudHackathons));
+      window.dispatchEvent(new CustomEvent('sh_hackathons_updated', { detail: cloudHackathons }));
+      return cloudHackathons;
+    }
+  } catch (e) {
+    console.warn('Error syncing hackathons from Supabase:', e);
+  }
+  return getStoredHackathons();
+};
+
+// Helper to save stored hackathons and sync with Supabase
 export const saveStoredHackathons = (hackathons) => {
   try {
+    const prev = getStoredHackathons();
     localStorage.setItem(STORAGE_KEYS.HACKATHONS, JSON.stringify(hackathons));
     window.dispatchEvent(new CustomEvent('sh_hackathons_updated', { detail: hackathons }));
+
+    // Detect deleted items and remove from Supabase
+    const currentIds = new Set(hackathons.map(h => h.id));
+    const deleted = prev.filter(p => !currentIds.has(p.id));
+    for (const d of deleted) {
+      deleteHackathonFromSupabase(d.id).catch(() => {});
+    }
+
+    // Upsert items to Supabase
+    for (const h of hackathons) {
+      saveHackathonToSupabase(h).catch(() => {});
+    }
   } catch (err) {
     console.error('Failed to save hackathons to storage:', err);
   }
+};
+
+// Helper to delete a specific hackathon
+export const deleteHackathon = async (id) => {
+  const current = getStoredHackathons();
+  const updated = current.filter(h => h.id !== id);
+  localStorage.setItem(STORAGE_KEYS.HACKATHONS, JSON.stringify(updated));
+  window.dispatchEvent(new CustomEvent('sh_hackathons_updated', { detail: updated }));
+  await deleteHackathonFromSupabase(id);
+  return updated;
 };
 
 // Helper to get stored registrations
@@ -240,11 +296,37 @@ export const getStoredHackathonRegistrations = () => {
   }
 };
 
-// Helper to save stored registrations
+// Background Sync registrations from Supabase
+export const syncHackathonRegistrationsFromSupabase = async () => {
+  try {
+    const cloudRegs = await fetchHackathonRegistrationsFromSupabase();
+    if (cloudRegs && Array.isArray(cloudRegs)) {
+      localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(cloudRegs));
+      window.dispatchEvent(new CustomEvent('sh_hackathon_registrations_updated', { detail: cloudRegs }));
+      return cloudRegs;
+    }
+  } catch (e) {
+    console.warn('Error syncing hackathon registrations from Supabase:', e);
+  }
+  return getStoredHackathonRegistrations();
+};
+
+// Helper to save stored registrations and sync with Supabase
 export const saveStoredHackathonRegistrations = (registrations) => {
   try {
+    const prev = getStoredHackathonRegistrations();
     localStorage.setItem(STORAGE_KEYS.REGISTRATIONS, JSON.stringify(registrations));
     window.dispatchEvent(new CustomEvent('sh_hackathon_registrations_updated', { detail: registrations }));
+
+    const currentIds = new Set(registrations.map(r => r.id));
+    const deleted = prev.filter(p => !currentIds.has(p.id));
+    for (const d of deleted) {
+      deleteHackathonRegistrationFromSupabase(d.id).catch(() => {});
+    }
+
+    for (const r of registrations) {
+      saveHackathonRegistrationToSupabase(r).catch(() => {});
+    }
   } catch (err) {
     console.error('Failed to save hackathon registrations to storage:', err);
   }

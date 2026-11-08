@@ -13,6 +13,7 @@ import {
   isApplicationDeadlineCrossed,
   getStoredTimelineSettings
 } from '../../lib/internshipStore';
+import { supabase } from '../../lib/supabaseClient';
 import { MarqueeAnnouncement } from '../common/MarqueeAnnouncement';
 import { InternshipSuccessModal } from './InternshipSuccessModal';
 
@@ -80,11 +81,44 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
     window.addEventListener('sh_internships_updated', handleInternshipsUpdate);
     window.addEventListener('storage', handleTimelineUpdate);
     window.addEventListener('storage', handleInternshipsUpdate);
+
+    // 3. Supabase Realtime multi-device subscription
+    let channel = null;
+    try {
+      const channelId = `internships_public_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      channel = supabase
+        .channel(channelId)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'internships' },
+          () => {
+            syncInternshipsFromSupabase().then((cloudData) => {
+              if (cloudData && Array.isArray(cloudData)) setInternships(cloudData);
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'internship_domains' },
+          () => {
+            syncInternshipsFromSupabase().then((cloudData) => {
+              if (cloudData && Array.isArray(cloudData)) setInternships(cloudData);
+            });
+          }
+        )
+        .subscribe();
+    } catch (e) {
+      console.warn('Realtime subscription error on internships:', e);
+    }
+
     return () => {
       window.removeEventListener('sh_internship_timeline_updated', handleTimelineUpdate);
       window.removeEventListener('sh_internships_updated', handleInternshipsUpdate);
       window.removeEventListener('storage', handleTimelineUpdate);
       window.removeEventListener('storage', handleInternshipsUpdate);
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch (e) {}
+      }
     };
   }, []);
 

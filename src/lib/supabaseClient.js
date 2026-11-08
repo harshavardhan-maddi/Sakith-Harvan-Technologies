@@ -512,7 +512,7 @@ export const fetchInternshipsFromSupabase = async () => {
       .from('internships')
       .select('*')
       .order('created_at', { ascending: false });
-    if (!error && Array.isArray(data) && data.length > 0) {
+    if (!error && Array.isArray(data)) {
       return data.map(row => ({
         id: row.id,
         title: row.title,
@@ -607,7 +607,7 @@ export const fetchDomainsFromSupabase = async () => {
       .from('internship_domains')
       .select('name')
       .order('name', { ascending: true });
-    if (!error && Array.isArray(data) && data.length > 0) {
+    if (!error && Array.isArray(data)) {
       return data.map(d => d.name);
     }
   } catch (err) {
@@ -652,7 +652,7 @@ export const fetchInternshipApplicationsFromSupabase = async () => {
       .from('internship_applications')
       .select('*')
       .order('submitted_at', { ascending: false });
-    if (!error && Array.isArray(data) && data.length > 0) {
+    if (!error && Array.isArray(data)) {
       return data.map(row => ({
         id: row.id,
         internshipId: row.internship_id || row.internshipId,
@@ -718,6 +718,190 @@ export const updateInternshipApplicationStatusInSupabase = async (id, status) =>
       .eq('id', id);
   } catch (err) {
     console.warn('Supabase update application error:', err);
+  }
+};
+
+/* =================================================================== */
+/* SUPABASE HACKATHONS HELPERS                                         */
+/* =================================================================== */
+export const fetchHackathonsFromSupabase = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('hackathons')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!data) return null;
+
+    return data.map((row) => {
+      if (row.raw_data && typeof row.raw_data === 'object') {
+        return {
+          ...row.raw_data,
+          id: row.id,
+          title: row.title || row.raw_data.title,
+          status: row.status || row.raw_data.status,
+          logoUrl: row.logo_url || row.raw_data.logoUrl || '',
+          problemStatements: row.problem_statements || row.raw_data.problemStatements || [],
+          winners: row.winners || row.raw_data.winners || null
+        };
+      }
+      return {
+        id: row.id,
+        title: row.title,
+        tagline: row.tagline || '',
+        description: row.description || '',
+        theme: row.theme || '',
+        logoUrl: row.logo_url || '',
+        entryFee: Number(row.entry_fee) || 0,
+        minTeamSize: row.min_team_size || 2,
+        maxTeamSize: row.max_team_size || 4,
+        status: row.status || 'active',
+        registrationDeadline: row.registration_deadline,
+        statementLockDeadline: row.statement_lock_deadline,
+        statementsLocked: Boolean(row.statements_locked),
+        kickoffTime: row.kickoff_time,
+        submissionDeadline: row.submission_deadline,
+        statementsReleased: Boolean(row.statements_released),
+        submissionsClosed: Boolean(row.submissions_closed),
+        problemStatements: Array.isArray(row.problem_statements) ? row.problem_statements : [],
+        winners: row.winners || null,
+        createdAt: row.created_at
+      };
+    });
+  } catch (err) {
+    console.warn('Supabase fetch hackathons error:', err);
+    return null;
+  }
+};
+
+export const saveHackathonToSupabase = async (item) => {
+  try {
+    const payload = {
+      id: item.id,
+      title: item.title,
+      tagline: item.tagline || '',
+      description: item.description || '',
+      theme: item.theme || '',
+      logo_url: item.logoUrl || '',
+      entry_fee: Number(item.entryFee) || 0,
+      min_team_size: item.minTeamSize || 2,
+      max_team_size: item.maxTeamSize || 4,
+      status: item.status || 'active',
+      registration_deadline: item.registrationDeadline ? new Date(item.registrationDeadline).toISOString() : null,
+      statement_lock_deadline: item.statementLockDeadline ? new Date(item.statementLockDeadline).toISOString() : null,
+      statements_locked: Boolean(item.statementsLocked),
+      kickoff_time: item.kickoffTime ? new Date(item.kickoffTime).toISOString() : null,
+      submission_deadline: item.submissionDeadline ? new Date(item.submissionDeadline).toISOString() : null,
+      statements_released: Boolean(item.statementsReleased),
+      submissions_closed: Boolean(item.submissionsClosed),
+      problem_statements: Array.isArray(item.problemStatements) ? item.problemStatements : [],
+      winners: item.winners || null,
+      raw_data: item,
+      updated_at: new Date().toISOString()
+    };
+    await supabase.from('hackathons').upsert([payload], { onConflict: 'id' });
+  } catch (err) {
+    console.warn('Supabase save hackathon error:', err);
+  }
+};
+
+export const deleteHackathonFromSupabase = async (id) => {
+  try {
+    await supabase.from('hackathons').delete().eq('id', id);
+  } catch (err) {
+    console.warn('Supabase delete hackathon error:', err);
+  }
+};
+
+/* =================================================================== */
+/* SUPABASE HACKATHON REGISTRATIONS HELPERS                            */
+/* =================================================================== */
+export const fetchHackathonRegistrationsFromSupabase = async (hackathonId = null) => {
+  try {
+    let query = supabase.from('hackathon_registrations').select('*').order('registered_at', { ascending: false });
+    if (hackathonId) {
+      query = query.eq('hackathon_id', hackathonId);
+    }
+    const { data, error } = await query;
+    if (error) throw error;
+    if (!data) return null;
+
+    return data.map((row) => {
+      if (row.raw_data && typeof row.raw_data === 'object') {
+        return {
+          ...row.raw_data,
+          id: row.id,
+          hackathonId: row.hackathon_id || row.raw_data.hackathonId,
+          teamName: row.team_name || row.raw_data.teamName,
+          selectedStatementId: row.selected_statement_id || row.raw_data.selectedStatementId,
+          statementLocked: Boolean(row.statement_locked),
+          paymentStatus: row.payment_status || row.raw_data.paymentStatus,
+          password: row.password || row.raw_data.password,
+          submission: row.submission || row.raw_data.submission,
+          deploymentStarted: Boolean(row.deployment_started)
+        };
+      }
+      return {
+        id: row.id,
+        hackathonId: row.hackathon_id,
+        teamName: row.team_name,
+        teamSize: row.team_size || 2,
+        members: Array.isArray(row.members) ? row.members : [],
+        selectedStatementId: row.selected_statement_id || null,
+        statementLocked: Boolean(row.statement_locked),
+        statementLockedAt: row.statement_locked_at,
+        paymentStatus: row.payment_status || 'Completed',
+        paymentRef: row.payment_ref,
+        amountPaid: Number(row.amount_paid) || 0,
+        password: row.password,
+        submission: row.submission || null,
+        submittedAt: row.submitted_at,
+        deploymentStarted: Boolean(row.deployment_started),
+        deploymentStartedAt: row.deployment_started_at,
+        registeredAt: row.registered_at
+      };
+    });
+  } catch (err) {
+    console.warn('Supabase fetch hackathon registrations error:', err);
+    return null;
+  }
+};
+
+export const saveHackathonRegistrationToSupabase = async (reg) => {
+  try {
+    const payload = {
+      id: reg.id,
+      hackathon_id: reg.hackathonId,
+      team_name: reg.teamName,
+      team_size: reg.teamSize || 2,
+      members: Array.isArray(reg.members) ? reg.members : [],
+      selected_statement_id: reg.selectedStatementId || null,
+      statement_locked: Boolean(reg.statementLocked),
+      statement_locked_at: reg.statementLockedAt ? new Date(reg.statementLockedAt).toISOString() : null,
+      payment_status: reg.paymentStatus || 'Completed',
+      payment_ref: reg.paymentRef || '',
+      amount_paid: Number(reg.amountPaid) || 0,
+      password: reg.password || '',
+      submission: reg.submission || null,
+      submitted_at: reg.submittedAt ? new Date(reg.submittedAt).toISOString() : null,
+      deployment_started: Boolean(reg.deploymentStarted),
+      deployment_started_at: reg.deploymentStartedAt ? new Date(reg.deploymentStartedAt).toISOString() : null,
+      registered_at: reg.registeredAt ? new Date(reg.registeredAt).toISOString() : new Date().toISOString(),
+      raw_data: reg,
+      updated_at: new Date().toISOString()
+    };
+    await supabase.from('hackathon_registrations').upsert([payload], { onConflict: 'id' });
+  } catch (err) {
+    console.warn('Supabase save hackathon registration error:', err);
+  }
+};
+
+export const deleteHackathonRegistrationFromSupabase = async (id) => {
+  try {
+    await supabase.from('hackathon_registrations').delete().eq('id', id);
+  } catch (err) {
+    console.warn('Supabase delete hackathon registration error:', err);
   }
 };
 
