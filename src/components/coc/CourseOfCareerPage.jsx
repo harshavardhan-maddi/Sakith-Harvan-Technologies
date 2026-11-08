@@ -388,7 +388,7 @@ export const CourseOfCareerPage = ({ onOpenRequirement, onOpenConsultation }) =>
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 pt-20">
+    <div className="min-h-screen bg-slate-50 text-slate-800 pt-20 w-full max-w-full overflow-x-hidden">
       {/* Admin Controlled Marquee Slide Announcement */}
       <MarqueeAnnouncement page="coc" />
 

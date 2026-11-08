@@ -42,7 +42,12 @@ export const Navbar = ({
   };
 
   return (
-    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'glass-nav py-3 shadow-sm' : 'bg-white/90 py-4 backdrop-blur-md border-b border-slate-200/80 shadow-xs'}`}>
+    <header 
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 w-full max-w-full overflow-x-hidden ${isScrolled ? 'glass-nav py-3 shadow-sm' : 'bg-white/90 py-4 backdrop-blur-md border-b border-slate-200/80 shadow-xs'}`}
+      style={{
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0px))'
+      }}
+    >
       <div className="container-custom flex items-center justify-between">
         {/* Top Left: Brand Logo & Sun Icon Theme Toggle Button */}
         <div className="flex items-center gap-3">

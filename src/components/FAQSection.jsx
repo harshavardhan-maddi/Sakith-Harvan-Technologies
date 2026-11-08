@@ -40,7 +40,7 @@ export const FAQSection = ({ onOpenConsultation, onOpenRequirement }) => {
   };
 
   return (
-    <section id="faqs" className="py-20 md:py-28 relative bg-slate-50 min-h-[70vh]">
+    <section id="faqs" className="py-20 md:py-28 relative bg-slate-50 min-h-[70vh] overflow-hidden">
       {/* Soft Blue Ambient Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
 

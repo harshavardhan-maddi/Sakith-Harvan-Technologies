@@ -16,6 +16,7 @@ import { Calendar, X, CheckCircle2, PhoneCall } from 'lucide-react';
 import { InternshipsPage } from './components/internships/InternshipsPage';
 import { CourseOfCareerPage } from './components/coc/CourseOfCareerPage';
 import { HackathonsPage } from './components/hackathons/HackathonsPage';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Lazy load large modals for instant page loading
@@ -106,7 +107,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 selection:bg-blue-600 selection:text-white flex flex-col font-sans">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-50 text-slate-800 selection:bg-blue-600 selection:text-white flex flex-col font-sans">
       {/* Brand Intro Splash Animation */}
       {showSplash && <IntroSplash onFinish={() => setShowSplash(false)} />}
 
@@ -122,7 +123,7 @@ export default function App() {
       />
 
       {/* Main Page Layout Sections */}
-      <main className="flex-1">
+      <main className="flex-1 pb-20 lg:pb-0 w-full max-w-full overflow-x-hidden">
         {/* VIEW: HOME (Landing Page - strictly Home page only without services, solutions, or about) */}
         {activeTab === 'home' && (
           <>
@@ -138,7 +139,7 @@ export default function App() {
 
 
             {/* Direct Consultation Section */}
-            <section id="consultation-section" className="py-20 bg-white/80 relative border-t border-b border-slate-200/80">
+            <section id="consultation-section" className="py-20 bg-white/80 relative border-t border-b border-slate-200/80 overflow-hidden">
               <div className="container-custom">
                 <div className="max-w-4xl mx-auto text-center space-y-4 mb-10">
                   <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
@@ -243,7 +244,7 @@ export default function App() {
       </main>
 
       {/* Floating Requirement Button */}
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
+      <div className="fixed bottom-20 lg:bottom-6 right-4 sm:right-6 z-30 flex items-center gap-3">
         <button
           onClick={() => handleOpenRequirement({})}
           className="btn-primary text-xs py-3 px-5 rounded-full shadow-xl shadow-blue-600/30 glow-blue border border-white/40 flex items-center gap-2"
@@ -367,6 +368,17 @@ export default function App() {
         onOpenConsultation={() => setIsConsultationModalOpen(true)}
         onOpenRequirement={handleOpenRequirement}
         onOpenAdmin={() => setIsAdminPortalOpen(true)}
+      />
+
+      {/* Native Mobile App Bottom Navigation Bar (Active on Mobile Screens & PWA) */}
+      <MobileBottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onOpenConsultation={() => setIsConsultationModalOpen(true)}
+        onOpenRequirement={() => handleOpenRequirement({})}
+        onOpenAdmin={() => setIsAdminPortalOpen(true)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
     </div>
   );

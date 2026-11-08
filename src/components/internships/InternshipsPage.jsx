@@ -211,7 +211,7 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
   };
 
   return (
-    <div className="pt-20 pb-20 bg-slate-50 min-h-screen">
+    <div className="pt-20 pb-20 bg-slate-50 min-h-screen w-full max-w-full overflow-x-hidden">
       {/* Admin Controlled Marquee Slide Announcement */}
       <MarqueeAnnouncement page="internships" />
 

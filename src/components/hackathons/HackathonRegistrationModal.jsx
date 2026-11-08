@@ -120,7 +120,7 @@ export const HackathonRegistrationModal = ({
   const chosenStatement = hackathon.problemStatements?.find(ps => ps.id === selectedStatementId);
 
   return (
-    <div className="fixed inset-0 z-50 w-screen h-screen min-h-screen bg-[#090A0F] text-slate-100 flex flex-col overflow-y-auto animate-in fade-in duration-200 selection:bg-amber-500 selection:text-slate-950">
+    <div className="fixed inset-0 z-50 w-full max-w-full h-screen min-h-screen bg-[#090A0F] text-slate-100 flex flex-col overflow-x-hidden overflow-y-auto animate-in fade-in duration-200 selection:bg-amber-500 selection:text-slate-950">
       
       {/* FULL-SCREEN STICKY TOP NAVIGATION BAR */}
       <header className="sticky top-0 z-40 w-full px-6 py-4 bg-slate-950/95 backdrop-blur-md border-b border-white/10 flex items-center justify-between shadow-xl text-white">

@@ -56,7 +56,7 @@ export const HackathonsPage = ({ onOpenRequirement, onOpenConsultation }) => {
   };
 
   return (
-    <div className="pt-20 pb-20 bg-[#090A0F] text-slate-100 min-h-screen selection:bg-amber-500 selection:text-slate-950">
+    <div className="pt-20 pb-20 bg-[#090A0F] text-slate-100 min-h-screen selection:bg-amber-500 selection:text-slate-950 w-full max-w-full overflow-x-hidden">
       
       {/* Toast Notification */}
       {toastMessage && (

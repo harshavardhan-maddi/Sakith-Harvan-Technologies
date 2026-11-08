@@ -51,7 +51,7 @@ export const ServicesGrid = ({
   };
 
   return (
-    <section id="services" className="py-12 md:py-16 relative bg-slate-50">
+    <section id="services" className="py-12 md:py-16 relative bg-slate-50 overflow-hidden">
       {/* Soft Blue Ambient Glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-blue-500/10 blur-[120px] rounded-full pointer-events-none" />
 

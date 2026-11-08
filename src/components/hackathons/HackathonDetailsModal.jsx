@@ -22,7 +22,7 @@ export const HackathonDetailsModal = ({
   );
 
   return (
-    <div className="fixed inset-0 z-50 w-screen h-screen min-h-screen bg-slate-50 text-slate-900 flex flex-col overflow-y-auto animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 w-full max-w-full h-screen min-h-screen bg-slate-50 text-slate-900 flex flex-col overflow-x-hidden overflow-y-auto animate-in fade-in duration-200">
       
       {/* FULL-SCREEN STICKY TOP NAVIGATION BAR */}
       <header className="sticky top-0 z-40 w-full px-6 py-4 bg-slate-900/95 backdrop-blur-md border-b border-white/10 flex items-center justify-between shadow-xl text-white">
