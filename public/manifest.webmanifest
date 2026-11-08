@@ -1,0 +1,68 @@
+{
+  "name": "Sakith Harvan Technologies",
+  "short_name": "Sakith Harvan",
+  "description": "Enterprise SaaS Platforms, Custom Software & Institutional Technology Solutions",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#dc2626",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/SAKITH_HARVAN.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Unified Access Portal",
+      "short_name": "Portal",
+      "description": "Login as Admin, Founder, Employee, or Intern",
+      "url": "/#portal",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Book Consultation",
+      "short_name": "Consultation",
+      "description": "Schedule a 30-minute executive session",
+      "url": "/#consultation-section",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Enterprise SaaS",
+      "short_name": "SaaS",
+      "description": "View Campus ERP & bespoke SaaS solutions",
+      "url": "/#saas-space",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Technology Workshops",
+      "short_name": "Workshops",
+      "description": "View campus bootcamps & lab programs",
+      "url": "/#workshop-space",
+      "icons": [{ "src": "/favicon.png", "sizes": "192x192" }]
+    }
+  ]
+}
