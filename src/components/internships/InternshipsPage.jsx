@@ -763,14 +763,25 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
             </div>
 
             {/* Stipend & Openings Banner */}
-            <div className="p-4 rounded-xl bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div>
-                <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Stipend &amp; Perks</span>
-                <span className="font-bold text-cyan-300">{exploringInternship.stipend}</span>
+            <div className="p-4 sm:p-5 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-300 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+              <div className="space-y-1">
+                <span className="internship-meta-label block text-[11px] uppercase font-black tracking-wider">
+                  Stipend &amp; Perks
+                </span>
+                <span className="internship-stipend-text text-sm sm:text-base font-black">
+                  {exploringInternship.stipend || 'Performance-based Certificate & Letter'}
+                </span>
               </div>
-              <div>
-                <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Available Seats</span>
-                <span className="font-bold text-white">{exploringInternship.openings} Openings</span>
+              <div className="space-y-1 sm:text-right">
+                <span className="internship-meta-label block text-[11px] uppercase font-black tracking-wider">
+                  Available Seats
+                </span>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700 shadow-sm">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 dark:bg-emerald-400 animate-pulse" />
+                  <span className="seats-available-badge-text text-xs sm:text-sm font-black tracking-tight">
+                    {exploringInternship.openings || 5} Seats Available
+                  </span>
+                </div>
               </div>
             </div>
 

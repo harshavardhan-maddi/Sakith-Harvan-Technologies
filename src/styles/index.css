@@ -166,6 +166,31 @@ html.dark .coc-reality-desc {
   color: #E2E8F0 !important;
 }
 
+/* Internship Details Modal - High Contrast Elements */
+.internship-meta-label {
+  color: #334155 !important;
+}
+[data-theme="dark"] .internship-meta-label,
+html.dark .internship-meta-label {
+  color: #94A3B8 !important;
+}
+
+.internship-stipend-text {
+  color: #1D4ED8 !important;
+}
+[data-theme="dark"] .internship-stipend-text,
+html.dark .internship-stipend-text {
+  color: #60A5FA !important;
+}
+
+.seats-available-badge-text {
+  color: #064E3B !important;
+}
+[data-theme="dark"] .seats-available-badge-text,
+html.dark .seats-available-badge-text {
+  color: #6EE7B7 !important;
+}
+
 /* Universal High-Contrast Opposite Selection */
 ::selection {
   background-color: #0f172a;
