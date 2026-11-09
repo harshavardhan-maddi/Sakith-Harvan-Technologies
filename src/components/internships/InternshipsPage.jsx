@@ -268,36 +268,36 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
         <div className="absolute bottom-0 left-1/4 w-80 h-80 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="container-custom relative z-10 max-w-5xl mx-auto text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-400/30 text-blue-300 text-xs font-semibold backdrop-blur-md">
-            <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/20 border border-blue-400/40 text-cyan-200 text-xs font-semibold backdrop-blur-md shadow-sm">
+            <Sparkles className="w-4 h-4 text-cyan-300 animate-pulse" />
             <span>Sakith Harvan Technologies • Career Acceleration</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight">
-            Launch Your Tech Career with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-200">Real Industry Internships</span>
+            Launch Your Tech Career with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-cyan-200 to-sky-100">Real Industry Internships</span>
           </h1>
 
-          <p className="text-slate-300 text-sm sm:text-base max-w-3xl mx-auto leading-relaxed">
+          <p className="text-slate-100 text-sm sm:text-base max-w-3xl mx-auto leading-relaxed font-normal" style={{ color: '#F1F5F9' }}>
             Move beyond textbook theory. Work on real enterprise SaaS software, train neural nets, containerize cloud microservices, and build high-impact production code with direct mentorship from leadership.
           </p>
 
           {/* Key Metric Highlights */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto pt-6 text-left">
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <div className="text-2xl font-extrabold text-blue-400">100%</div>
-              <div className="text-xs text-slate-300 font-medium">Real-World Enterprise Projects</div>
+            <div className="p-4 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md shadow-sm">
+              <div className="text-2xl font-extrabold text-blue-300">100%</div>
+              <div className="text-xs text-slate-100 font-medium mt-0.5" style={{ color: '#E2E8F0' }}>Real-World Enterprise Projects</div>
             </div>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <div className="text-2xl font-extrabold text-cyan-400">1-on-1</div>
-              <div className="text-xs text-slate-300 font-medium">Founders &amp; Tech Lead Mentorship</div>
+            <div className="p-4 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md shadow-sm">
+              <div className="text-2xl font-extrabold text-cyan-300">1-on-1</div>
+              <div className="text-xs text-slate-100 font-medium mt-0.5" style={{ color: '#E2E8F0' }}>Founders &amp; Tech Lead Mentorship</div>
             </div>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <div className="text-2xl font-extrabold text-indigo-400">PPO Track</div>
-              <div className="text-xs text-slate-300 font-medium">Pre-Placement Full-Time Opportunity</div>
+            <div className="p-4 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md shadow-sm">
+              <div className="text-2xl font-extrabold text-indigo-300">Hands-On</div>
+              <div className="text-xs text-slate-100 font-medium mt-0.5" style={{ color: '#E2E8F0' }}>Live Cloud &amp; Production Deployment</div>
             </div>
-            <div className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm">
-              <div className="text-2xl font-extrabold text-emerald-400">Verified</div>
-              <div className="text-xs text-slate-300 font-medium">Industrial Certificate &amp; LOR</div>
+            <div className="p-4 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md shadow-sm">
+              <div className="text-2xl font-extrabold text-emerald-300">Verified</div>
+              <div className="text-xs text-slate-100 font-medium mt-0.5" style={{ color: '#E2E8F0' }}>Industrial Certificate &amp; LOR</div>
             </div>
           </div>
 
