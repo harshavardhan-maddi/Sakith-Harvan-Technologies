@@ -467,47 +467,41 @@ export const CourseOfCareerPage = ({ onOpenRequirement, onOpenConsultation }) =>
                       </div>
                     </div>
 
-                    {/* Right: The Dilemma & The Solution (High Contrast Dark Text on Clean Surface) */}
+                    {/* Right: The Dilemma & The Solution (High Contrast Text on Clean Surface) */}
                     <div className="md:col-span-7 p-6 sm:p-8 flex flex-col justify-center space-y-4 text-left bg-white text-slate-900">
                       <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-50 border border-cyan-300 text-cyan-900 text-xs font-bold self-start shadow-sm">
                         <Sparkles className="w-3.5 h-3.5 text-cyan-700" />
                         <span>The Reality of College vs Industry</span>
                       </div>
 
-                      <h3 
-                        className="text-xl sm:text-2xl font-black text-slate-900 leading-snug tracking-tight"
-                        style={{ color: '#0F172A' }}
-                      >
+                      <h3 className="coc-reality-heading text-xl sm:text-2xl font-black leading-snug tracking-tight text-slate-900">
                         “Studying 40+ college subjects, but still uncertain how to land a high-package tech career?”
                       </h3>
 
-                      <p 
-                        className="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium"
-                        style={{ color: '#334155' }}
-                      >
+                      <p className="coc-reality-desc text-xs sm:text-sm leading-relaxed font-medium text-slate-700">
                         Outdated college textbooks, zero live GitHub SaaS projects, and placement anxiety leave students confused. Course of Career runs alongside your college years, transforming confusion into hands-on mastery.
                       </p>
 
                       {/* 4 Pillars Progression Grid - Visually Distinct High Contrast Cards */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2 text-center text-xs">
-                        <div className="p-3 rounded-2xl bg-amber-50/80 border border-amber-200 shadow-sm">
+                        <div className="p-3 rounded-2xl bg-amber-50/90 border border-amber-200 shadow-sm">
                           <div className="text-[10px] font-mono text-slate-600 uppercase font-bold">1st Year</div>
-                          <div className="font-black text-amber-900 text-xs mt-0.5" style={{ color: '#78350F' }}>Foundations</div>
+                          <div className="font-black text-amber-950 text-xs mt-0.5" style={{ color: '#78350F' }}>Foundations</div>
                           <div className="text-[10px] text-slate-700 font-medium mt-0.5" style={{ color: '#334155' }}>Logic &amp; Syntax</div>
                         </div>
-                        <div className="p-3 rounded-2xl bg-blue-50/80 border border-blue-200 shadow-sm">
+                        <div className="p-3 rounded-2xl bg-blue-50/90 border border-blue-200 shadow-sm">
                           <div className="text-[10px] font-mono text-slate-600 uppercase font-bold">2nd Year</div>
-                          <div className="font-black text-blue-900 text-xs mt-0.5" style={{ color: '#1E3A8A' }}>Domain Skills</div>
+                          <div className="font-black text-blue-950 text-xs mt-0.5" style={{ color: '#1E3A8A' }}>Domain Skills</div>
                           <div className="text-[10px] text-slate-700 font-medium mt-0.5" style={{ color: '#334155' }}>FSD / AI / Cloud</div>
                         </div>
-                        <div className="p-3 rounded-2xl bg-purple-50/80 border border-purple-200 shadow-sm">
+                        <div className="p-3 rounded-2xl bg-purple-50/90 border border-purple-200 shadow-sm">
                           <div className="text-[10px] font-mono text-slate-600 uppercase font-bold">3rd Year</div>
-                          <div className="font-black text-purple-900 text-xs mt-0.5" style={{ color: '#581C87' }}>Live Projects</div>
+                          <div className="font-black text-purple-950 text-xs mt-0.5" style={{ color: '#581C87' }}>Live Projects</div>
                           <div className="text-[10px] text-slate-700 font-medium mt-0.5" style={{ color: '#334155' }}>SaaS &amp; Internships</div>
                         </div>
-                        <div className="p-3 rounded-2xl bg-emerald-50/80 border border-emerald-200 shadow-sm">
+                        <div className="p-3 rounded-2xl bg-emerald-50/90 border border-emerald-200 shadow-sm">
                           <div className="text-[10px] font-mono text-slate-600 uppercase font-bold">4th Year</div>
-                          <div className="font-black text-emerald-900 text-xs mt-0.5" style={{ color: '#064E3B' }}>Career Offer</div>
+                          <div className="font-black text-emerald-950 text-xs mt-0.5" style={{ color: '#064E3B' }}>Career Offer</div>
                           <div className="text-[10px] text-slate-700 font-medium mt-0.5" style={{ color: '#334155' }}>Top Placements</div>
                         </div>
                       </div>

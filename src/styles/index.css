@@ -81,6 +81,91 @@ img, svg, video, canvas, audio, iframe, embed, object {
   }
 }
 
+/* =================================================================== */
+/* COMPREHENSIVE DARK THEME STYLING                                    */
+/* =================================================================== */
+[data-theme="dark"], html.dark {
+  --bg-dark: #090A0F;
+  --soft-canvas: #090A0F;
+  --text-main: #F8FAFC;
+  background-color: #090A0F !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] body, html.dark body {
+  background-color: #090A0F !important;
+  color: #F8FAFC !important;
+  background-image: 
+    radial-gradient(circle at 15% 10%, rgba(37, 99, 235, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(2, 132, 199, 0.14) 0%, transparent 45%) !important;
+}
+
+[data-theme="dark"] .bg-slate-50, html.dark .bg-slate-50 {
+  background-color: #090A0F !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .bg-white, html.dark .bg-white {
+  background-color: #11131E !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .bg-white\/80, html.dark .bg-white\/80,
+[data-theme="dark"] .bg-white\/90, html.dark .bg-white\/90,
+[data-theme="dark"] .bg-white\/95, html.dark .bg-white\/95,
+[data-theme="dark"] .bg-white\/98, html.dark .bg-white\/98 {
+  background-color: rgba(17, 19, 30, 0.95) !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme="dark"] .border-slate-200, html.dark .border-slate-200,
+[data-theme="dark"] .border-slate-200\/80, html.dark .border-slate-200\/80,
+[data-theme="dark"] .border-slate-200\/90, html.dark .border-slate-200\/90 {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .text-slate-900, html.dark .text-slate-900 {
+  color: #FFFFFF !important;
+}
+
+[data-theme="dark"] .text-slate-800, html.dark .text-slate-800 {
+  color: #F1F5F9 !important;
+}
+
+[data-theme="dark"] .text-slate-700, html.dark .text-slate-700 {
+  color: #E2E8F0 !important;
+}
+
+[data-theme="dark"] .text-slate-600, html.dark .text-slate-600 {
+  color: #CBD5E1 !important;
+}
+
+[data-theme="dark"] .text-slate-500, html.dark .text-slate-500 {
+  color: #94A3B8 !important;
+}
+
+/* Explicit text-black enforcement for high readability */
+.text-black {
+  color: #000000 !important;
+}
+
+/* Course of Career Reality Section - High-Contrast Text Clarity */
+.coc-reality-heading {
+  color: #0F172A !important;
+}
+[data-theme="dark"] .coc-reality-heading,
+html.dark .coc-reality-heading {
+  color: #FFFFFF !important;
+}
+
+.coc-reality-desc {
+  color: #334155 !important;
+}
+[data-theme="dark"] .coc-reality-desc,
+html.dark .coc-reality-desc {
+  color: #E2E8F0 !important;
+}
+
 /* Universal High-Contrast Opposite Selection */
 ::selection {
   background-color: #0f172a;

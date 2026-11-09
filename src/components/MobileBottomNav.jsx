@@ -13,7 +13,8 @@ import {
   Globe, 
   Users, 
   HelpCircle, 
-  Sun, 
+  Sun,
+  Moon, 
   ChevronRight,
   Sparkles,
   Download
@@ -36,7 +37,7 @@ export const MobileBottomNav = ({
   onOpenConsultation,
   onOpenRequirement,
   onOpenAdmin,
-  theme = 'blue',
+  theme = 'light',
   onToggleTheme
 }) => {
   const [isMoreSheetOpen, setIsMoreSheetOpen] = useState(false);
@@ -235,11 +236,11 @@ export const MobileBottomNav = ({
                 <button
                   onClick={onToggleTheme}
                   type="button"
-                  className="p-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 text-xs flex items-center gap-1 font-semibold"
-                  title="Toggle Theme Color"
+                  className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-amber-400 text-xs flex items-center gap-1.5 font-bold"
+                  title="Toggle Dark / Light Theme"
                 >
-                  <Sun className="w-3.5 h-3.5" />
-                  <span className="text-[11px]">{theme === 'blue' ? 'Blue' : 'Red'}</span>
+                  {theme === 'dark' ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-slate-700" />}
+                  <span className="text-[11px]">{theme === 'dark' ? 'Dark' : 'Light'}</span>
                 </button>
 
                 <button

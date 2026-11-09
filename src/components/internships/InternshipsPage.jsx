@@ -3,13 +3,14 @@ import {
   Briefcase, Search, Filter, Calendar, Clock, MapPin, Award, CheckCircle2, 
   ArrowRight, Sparkles, Building, ChevronRight, X, User, Mail, Phone, 
   GraduationCap, Globe, FileText, Send, Check, ExternalLink, ShieldCheck,
-  Code, Cpu, Shield, Database, Cloud, Palette, Terminal, BookOpen
+  Code, Cpu, Shield, Database, Cloud, Palette, Terminal, BookOpen, AlertCircle
 } from 'lucide-react';
 import { 
   getStoredInternships, 
   syncInternshipsFromSupabase,
   submitApplication, 
   getStoredApplications,
+  syncApplicationsFromSupabase,
   isApplicationDeadlineCrossed,
   getStoredTimelineSettings
 } from '../../lib/internshipStore';
@@ -50,8 +51,7 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
     skills: '',
     portfolioUrl: '',
     resumeUrl: '',
-    whyJoin: '',
-    preferredTimeline: '3 Months (Immediate Start)'
+    whyJoin: ''
   });
   const [submitting, setSubmitting] = useState(false);
 
@@ -67,6 +67,7 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
         setInternships(cloudData);
       }
     });
+    syncApplicationsFromSupabase().catch(() => {});
 
     const handleTimelineUpdate = () => {
       setIsClosed(isApplicationDeadlineCrossed());
@@ -153,10 +154,6 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
     }
     setApplyingInternship(internship);
     setExploringInternship(null);
-    setApplicationForm(prev => ({
-      ...prev,
-      preferredTimeline: internship.timeline
-    }));
   };
 
   const handleApplicationSubmit = (e) => {
@@ -170,11 +167,27 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
       alert('Please fill in all required fields (Name, Email, Phone, College).');
       return;
     }
+
+    // Verify candidate by email ID - each candidate can only apply once across domains
+    const candidateEmail = (applicationForm.email || '').trim().toLowerCase();
+    const allApps = getStoredApplications();
+    const existingApp = allApps.find(app => (app.email || '').trim().toLowerCase() === candidateEmail);
+    if (existingApp) {
+      const appliedDomain = existingApp.domain || 
+        internships.find(i => i.id === existingApp.internshipId)?.domain || 
+        existingApp.internshipTitle || 
+        'Internship';
+      alert(`You have already applied for the ${appliedDomain} domain!`);
+      return;
+    }
+
     setSubmitting(true);
     setTimeout(() => {
       const newApp = submitApplication({
         internshipId: applyingInternship.id,
         internshipTitle: applyingInternship.title,
+        domain: applyingInternship.domain,
+        timeline: applyingInternship.timeline,
         ...applicationForm
       });
       setSubmitting(false);
@@ -192,8 +205,7 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
         skills: '',
         portfolioUrl: '',
         resumeUrl: '',
-        whyJoin: '',
-        preferredTimeline: '3 Months (Immediate Start)'
+        whyJoin: ''
       });
     }, 800);
   };
@@ -669,37 +681,38 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
       {/* MODAL 1: EXPLORE DETAILS MODAL                           */}
       {/* ======================================================== */}
       {exploringInternship && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 relative space-y-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 sm:p-8 max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-300 relative space-y-6 text-black">
             {/* Header */}
-            <div className="flex items-start justify-between border-b border-slate-200 pb-4">
+            <div className="flex items-start justify-between border-b border-slate-300 pb-4">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 text-blue-900 border border-blue-300">
                     {exploringInternship.domain}
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300">
                     {exploringInternship.mode}
                   </span>
                 </div>
-                <h2 className="text-2xl font-extrabold text-slate-900">{exploringInternship.title}</h2>
-                <p className="text-xs text-slate-500 font-medium mt-1">
+                <h2 className="text-2xl font-black text-black">{exploringInternship.title}</h2>
+                <p className="text-xs text-black font-semibold mt-1">
                   Department: {exploringInternship.department || 'Sakith Harvan Engineering'} • {exploringInternship.timeline}
                 </p>
               </div>
 
               <button
                 onClick={() => setExploringInternship(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg text-black hover:bg-slate-200 transition-colors"
+                aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X className="w-5 h-5 text-black" />
               </button>
             </div>
 
             {/* Overview */}
             <div className="space-y-2">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Role Overview</h4>
-              <p className="text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <h4 className="text-xs font-black uppercase tracking-wider text-black">Role Overview</h4>
+              <p className="text-xs sm:text-sm text-black font-semibold leading-relaxed bg-slate-100 p-4 rounded-xl border border-slate-300">
                 {exploringInternship.overview}
               </p>
             </div>
@@ -707,15 +720,15 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
             {/* Timeline Breakdown / Agenda */}
             {exploringInternship.timelineDetails && (
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Timeline &amp; Learning Roadmap</h4>
+                <h4 className="text-xs font-black uppercase tracking-wider text-black">Timeline &amp; Learning Roadmap</h4>
                 <div className="space-y-2.5">
                   {exploringInternship.timelineDetails.map((t, idx) => (
-                    <div key={idx} className="p-3.5 rounded-xl border border-slate-200/90 bg-white hover:border-blue-300 transition-colors space-y-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-900">
-                        <span className="text-blue-600">{t.week}</span>
-                        <span>{t.title}</span>
+                    <div key={idx} className="p-3.5 rounded-xl border border-slate-300 bg-white hover:border-black transition-colors space-y-1">
+                      <div className="flex items-center justify-between text-xs font-black text-black">
+                        <span className="text-blue-900 font-black">{t.week}</span>
+                        <span className="text-black font-bold">{t.title}</span>
                       </div>
-                      <p className="text-xs text-slate-600">{t.desc}</p>
+                      <p className="text-xs text-black font-semibold">{t.desc}</p>
                     </div>
                   ))}
                 </div>
@@ -724,26 +737,26 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
 
             {/* Prerequisites & Deliverables */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
-                <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-blue-600" />
+              <div className="p-4 rounded-xl bg-slate-100 border border-slate-300 space-y-2">
+                <h4 className="text-xs font-black text-black flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-black" />
                   <span>Prerequisites</span>
                 </h4>
-                <ul className="space-y-1.5 text-xs text-slate-600 list-disc list-inside">
+                <ul className="space-y-1.5 text-xs text-black font-semibold list-disc list-inside">
                   {exploringInternship.prerequisites?.map((prereq, idx) => (
-                    <li key={idx} className="leading-snug">{prereq}</li>
+                    <li key={idx} className="leading-snug text-black font-semibold">{prereq}</li>
                   ))}
                 </ul>
               </div>
 
-              <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-2">
-                <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                  <Award className="w-4 h-4 text-blue-600" />
+              <div className="p-4 rounded-xl bg-slate-100 border border-slate-300 space-y-2">
+                <h4 className="text-xs font-black text-black flex items-center gap-1.5">
+                  <Award className="w-4 h-4 text-black" />
                   <span>Outcomes &amp; Deliverables</span>
                 </h4>
-                <ul className="space-y-1.5 text-xs text-slate-700 list-disc list-inside">
+                <ul className="space-y-1.5 text-xs text-black font-semibold list-disc list-inside">
                   {exploringInternship.deliverables?.map((deliv, idx) => (
-                    <li key={idx} className="leading-snug">{deliv}</li>
+                    <li key={idx} className="leading-snug text-black font-semibold">{deliv}</li>
                   ))}
                 </ul>
               </div>
@@ -752,20 +765,20 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
             {/* Stipend & Openings Banner */}
             <div className="p-4 rounded-xl bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div>
-                <span className="text-slate-200 block text-[10px] uppercase font-bold tracking-wider">Stipend &amp; Perks</span>
+                <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Stipend &amp; Perks</span>
                 <span className="font-bold text-cyan-300">{exploringInternship.stipend}</span>
               </div>
               <div>
-                <span className="text-slate-200 block text-[10px] uppercase font-bold tracking-wider">Available Seats</span>
+                <span className="text-slate-300 block text-[10px] uppercase font-bold tracking-wider">Available Seats</span>
                 <span className="font-bold text-white">{exploringInternship.openings} Openings</span>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-300">
               <button
                 onClick={() => setExploringInternship(null)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100"
+                className="px-4 py-2 rounded-xl text-xs font-bold text-black hover:bg-slate-200 transition-colors"
               >
                 Close
               </button>
@@ -783,133 +796,145 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
       {/* ======================================================== */}
       {/* MODAL 2: APPLY FOR INTERNSHIP MODAL                      */}
       {/* ======================================================== */}
-      {applyingInternship && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative space-y-6">
-            {/* Header */}
-            <div className="flex items-start justify-between border-b border-slate-200 pb-4">
-              <div>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Candidate Application</span>
-                <h3 className="text-xl font-bold text-slate-900">{applyingInternship.title}</h3>
-                <p className="text-xs text-slate-500">Domain: {applyingInternship.domain} • Timeline: {applyingInternship.timeline}</p>
-              </div>
-              <button
-                onClick={() => setApplyingInternship(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {applyingInternship && (() => {
+        const candidateEmailClean = (applicationForm.email || '').trim().toLowerCase();
+        const existingAppMatch = candidateEmailClean ? getStoredApplications().find(app => (app.email || '').trim().toLowerCase() === candidateEmailClean) : null;
+        const alreadyAppliedDomainName = existingAppMatch ? (existingAppMatch.domain || internships.find(i => i.id === existingAppMatch.internshipId)?.domain || existingAppMatch.internshipTitle || 'Internship') : null;
 
-            <form onSubmit={handleApplicationSubmit} className="space-y-4">
-              {/* Row 1: Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-2xl max-w-2xl w-full p-6 sm:p-8 max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200 relative space-y-6">
+              {/* Header */}
+              <div className="flex items-start justify-between border-b border-slate-200 pb-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={applicationForm.candidateName}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, candidateName: e.target.value })}
-                    placeholder="e.g. Rahul Varma"
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
-                  />
+                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Candidate Application</span>
+                  <h3 className="text-xl font-bold text-slate-900">{applyingInternship.title}</h3>
+                  <p className="text-xs text-slate-500">Domain: {applyingInternship.domain}</p>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    value={applicationForm.email}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, email: e.target.value })}
-                    placeholder="e.g. rahul@example.com"
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
-                  />
-                </div>
+                <button
+                  onClick={() => setApplyingInternship(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {/* Row 2: Phone & College */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={applicationForm.phone}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, phone: e.target.value })}
-                    placeholder="e.g. +91 9848022338"
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
-                  />
+              <form onSubmit={handleApplicationSubmit} className="space-y-4">
+                {/* Row 1: Name & Email */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={applicationForm.candidateName}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, candidateName: e.target.value })}
+                      placeholder="e.g. Rahul Varma"
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Email Address *</label>
+                    <input
+                      type="email"
+                      required
+                      value={applicationForm.email}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, email: e.target.value })}
+                      placeholder="e.g. rahul@example.com"
+                      className={`w-full px-3.5 py-2 text-xs rounded-xl border focus:outline-none bg-slate-50/50 ${
+                        alreadyAppliedDomainName ? 'border-amber-400 focus:border-amber-500' : 'border-slate-200 focus:border-blue-600'
+                      }`}
+                    />
+                    {alreadyAppliedDomainName && (
+                      <div className="mt-1.5 p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-1.5 animate-in fade-in">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>You have already applied for the {alreadyAppliedDomainName} domain!</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">College / University *</label>
-                  <input
-                    type="text"
-                    required
-                    value={applicationForm.college}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, college: e.target.value })}
-                    placeholder="e.g. JNTU / Osmania / CBIT"
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
-                  />
-                </div>
-              </div>
 
-              {/* Row 3: Branch, Degree, Year */}
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Degree</label>
-                  <select
-                    value={applicationForm.degree}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, degree: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
-                  >
-                    <option value="B.Tech">B.Tech</option>
-                    <option value="B.E">B.E</option>
-                    <option value="B.Sc">B.Sc</option>
-                    <option value="BCA">BCA</option>
-                    <option value="MCA">MCA</option>
-                    <option value="Diploma">Diploma</option>
-                    <option value="Other">Other</option>
-                  </select>
+                {/* Row 2: Phone & College */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={applicationForm.phone}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, phone: e.target.value })}
+                      placeholder="e.g. +91 9848022338"
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">College / University *</label>
+                    <input
+                      type="text"
+                      required
+                      value={applicationForm.college}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, college: e.target.value })}
+                      placeholder="e.g. JNTU / Osmania / CBIT"
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Branch</label>
-                  <select
-                    value={applicationForm.branch}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, branch: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
-                  >
-                    <option value="CSE">CSE</option>
-                    <option value="AIML">AIML</option>
-                    <option value="Data Science">Data Science</option>
-                    <option value="AI&DS">AI&amp;DS</option>
-                    <option value="Cyber Security">Cyber Security</option>
-                    <option value="IOT">IOT</option>
-                    <option value="ECE">ECE</option>
-                    <option value="EEE">EEE</option>
-                    <option value="Mechanical">Mechanical</option>
-                    <option value="Civil">Civil</option>
-                    <option value="Others">Others</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Academic Year</label>
-                  <select
-                    value={applicationForm.year}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, year: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
-                  >
-                    <option value="1st Year">1st Year</option>
-                    <option value="2nd Year">2nd Year</option>
-                    <option value="3rd Year">3rd Year</option>
-                    <option value="4th Year">4th Year</option>
-                    <option value="Graduated">Graduated</option>
-                  </select>
-                </div>
-              </div>
 
-              {/* Row 4: Skills & Preferred Timeline */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Row 3: Branch, Degree, Year */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Degree</label>
+                    <select
+                      value={applicationForm.degree}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, degree: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
+                    >
+                      <option value="B.Tech">B.Tech</option>
+                      <option value="B.E">B.E</option>
+                      <option value="B.Sc">B.Sc</option>
+                      <option value="BCA">BCA</option>
+                      <option value="MCA">MCA</option>
+                      <option value="Diploma">Diploma</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Branch</label>
+                    <select
+                      value={applicationForm.branch}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, branch: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
+                    >
+                      <option value="CSE">CSE</option>
+                      <option value="AIML">AIML</option>
+                      <option value="Data Science">Data Science</option>
+                      <option value="AI&DS">AI&amp;DS</option>
+                      <option value="Cyber Security">Cyber Security</option>
+                      <option value="IOT">IOT</option>
+                      <option value="ECE">ECE</option>
+                      <option value="EEE">EEE</option>
+                      <option value="Mechanical">Mechanical</option>
+                      <option value="Civil">Civil</option>
+                      <option value="Others">Others</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Academic Year</label>
+                    <select
+                      value={applicationForm.year}
+                      onChange={(e) => setApplicationForm({ ...applicationForm, year: e.target.value })}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
+                    >
+                      <option value="1st Year">1st Year</option>
+                      <option value="2nd Year">2nd Year</option>
+                      <option value="3rd Year">3rd Year</option>
+                      <option value="4th Year">4th Year</option>
+                      <option value="Graduated">Graduated</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Row 4: Known Skills / Tools (Full Width - Timeline question removed as requested) */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Known Skills / Tools</label>
                   <input
@@ -920,20 +945,6 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
                     className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-600 bg-slate-50/50"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Preferred Timeline</label>
-                  <select
-                    value={applicationForm.preferredTimeline}
-                    onChange={(e) => setApplicationForm({ ...applicationForm, preferredTimeline: e.target.value })}
-                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50"
-                  >
-                    <option value="2 Months (Fast-Track)">2 Months (Fast-Track)</option>
-                    <option value="3 Months (Summer / Standard)">3 Months (Summer / Standard)</option>
-                    <option value="6 Months (Comprehensive)">6 Months (Comprehensive)</option>
-                    <option value="Flexible with College Schedule">Flexible with College Schedule</option>
-                  </select>
-                </div>
-              </div>
 
               {/* Row 5: Portfolio / GitHub & Resume Link */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1003,7 +1014,7 @@ export const InternshipsPage = ({ onOpenRequirement, onOpenConsultation }) => {
             </form>
           </div>
         </div>
-      )}
+      )})()}
 
       {/* ======================================================== */}
       {/* MODAL 3: APPLICATION SUCCESS CONFIRMATION                */}

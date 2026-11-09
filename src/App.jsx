@@ -61,18 +61,23 @@ export default function App() {
     setIsStaffPortalOpen(true);
   };
 
-  // Website Color Theme (Default Soft Blue)
+  // Website Theme (Light / Dark Mode Toggle)
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('sh_theme') || 'blue';
+    return localStorage.getItem('sh_theme') || 'light';
   });
 
   React.useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     localStorage.setItem('sh_theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'blue' ? 'red' : 'blue'));
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   // Dedicated Workshop Scheduling Modal State

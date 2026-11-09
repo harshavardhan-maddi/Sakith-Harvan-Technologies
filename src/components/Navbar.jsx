@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Logo } from './Logo';
 import { 
-  Calendar, Menu, X, Shield, PhoneCall, ChevronRight, Sun 
+  Calendar, Menu, X, Shield, PhoneCall, ChevronRight, Sun, Moon 
 } from 'lucide-react';
 
 export const Navbar = ({
@@ -10,7 +10,7 @@ export const Navbar = ({
   onOpenConsultation,
   onOpenRequirement,
   onOpenAdmin,
-  theme = 'blue',
+  theme = 'light',
   onToggleTheme
 }) => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -58,15 +58,19 @@ export const Navbar = ({
             <Logo size="md" />
           </button>
 
-          {/* Top-Left Sun Icon Theme Toggle Button */}
+          {/* Top-Left Theme Toggle Button (Light / Dark Mode) */}
           <button
             onClick={onToggleTheme}
             type="button"
-            className="p-2 rounded-full border transition-all duration-300 transform hover:scale-105 flex items-center justify-center cursor-pointer bg-blue-50 border-blue-200 text-blue-600 shadow-sm"
-            title={`Toggle Theme Color (Current: ${theme === 'blue' ? 'Soft Blue' : 'Red Accent'})`}
-            aria-label="Toggle Color Theme"
+            className="p-2 rounded-full border transition-all duration-300 transform hover:scale-105 flex items-center justify-center cursor-pointer bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-amber-400 shadow-sm"
+            title={`Toggle Theme (Current: ${theme === 'dark' ? 'Dark Mode' : 'Light Mode'})`}
+            aria-label="Toggle Dark or Light Theme"
           >
-            <Sun className="w-4 h-4 text-blue-600" />
+            {theme === 'dark' ? (
+              <Sun className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Moon className="w-4 h-4 text-slate-700" />
+            )}
           </button>
         </div>
 
